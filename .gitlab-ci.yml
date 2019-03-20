@@ -1,0 +1,27 @@
+image: golang:1.11
+
+stages:
+  - test
+  - build
+
+test:
+  stage: test
+  script:
+    - echo "pwd=${PWD} CI_PROJECT_DIR=$CI_PROJECT_DIR GOPATH=$GOPATH"
+    - ls -la
+    - go test -v ./...
+#    - go fmt $(go list ./... )
+  except:
+    changes:
+      - README.md
+
+compile:
+  stage: build
+  script:
+    - go build -race -ldflags "-extldflags '-static'" ./...
+  except:
+    changes:
+      - README.md
+#  artifacts:
+#    paths:
+#    - $CI_PROJECT_DIR/cmd/helloworld
