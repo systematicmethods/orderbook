@@ -2,14 +2,17 @@ package orderbook
 
 import (
 	"github.com/google/uuid"
+	"orderbook/uuidext"
 	"time"
 )
 
 type order struct {
-	orderid  string
-	price    float64
-	timmuuid uuid.UUID
-	data     string
+	orderid   string
+	price     float64
+	timeuuid  uuid.UUID
+	side      Side
+	ordertype OrderType
+	data      string
 }
 
 type Order interface {
@@ -19,9 +22,8 @@ type Order interface {
 	Data() string
 }
 
-func NewOrder(orderid string, price float64, timestamp time.Time, data string) *order {
-	uuid, _ := uuid.NewUUID()
-	return &order{orderid: orderid, price: price, data: data, timmuuid: uuid}
+func NewOrder(orderid string, price float64, timestamp uuid.UUID, data string) *order {
+	return &order{orderid: orderid, price: price, data: data, timeuuid: timestamp}
 }
 
 func (p *order) Orderid() string {
@@ -33,16 +35,14 @@ func (p *order) Price() float64 {
 }
 
 func (p *order) Timestamp() time.Time {
-	return time.Unix(p.timmuuid.Time().UnixTime())
-	//time := p.timmuuid.Time()
-	//return time
+	return time.Unix(p.timeuuid.Time().UnixTime())
 }
 
 func (p *order) Data() string {
 	return p.data
 }
 
-func priceComparator(a, b interface{}) int {
+func sellPriceComparator(a, b interface{}) int {
 	apti := a.(*order)
 	bpti := b.(*order)
 	switch {
@@ -51,13 +51,19 @@ func priceComparator(a, b interface{}) int {
 	case apti.price < bpti.price:
 		return -1
 	default:
-		switch {
-		case apti.timmuuid.Time() > bpti.timmuuid.Time(): // after
-			return 1
-		case apti.timmuuid.Time() < bpti.timmuuid.Time(): // before
-			return -1
-		default:
-			return 0
-		}
+		return uuidext.UUIDComparator(apti.timeuuid, bpti.timeuuid)
+	}
+}
+
+func buyPriceComparator(a, b interface{}) int {
+	apti := a.(*order)
+	bpti := b.(*order)
+	switch {
+	case apti.price < bpti.price:
+		return 1
+	case apti.price > bpti.price:
+		return -1
+	default:
+		return uuidext.UUIDComparator(apti.timeuuid, bpti.timeuuid)
 	}
 }

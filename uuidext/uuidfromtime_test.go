@@ -24,7 +24,7 @@ func Test_NewUUIDFromTimeIsTheSame(m *testing.T) {
 
 	for _, ex := range exs {
 		//fmt.Printf("date %v\n", ex.t)
-		id, _ := NewUUIDFromTime(ex.t, uint16(ex.seq))
+		id, _ := NewUUIDFromTimeSeq(ex.t, uint16(ex.seq))
 		if id.Version() != 1 {
 			m.Errorf("Not type 1 UUID was %d", id.Version())
 		}
@@ -54,8 +54,8 @@ func Test_NewUUIDFromTimeIsEqual(m *testing.T) {
 		{time.Date(2019, 10, 11, 11, 11, 1, 100, loc), 11},
 	}
 
-	id1, _ := NewUUIDFromTime(exs[0].t, exs[0].seq)
-	id2, _ := NewUUIDFromTime(exs[1].t, exs[1].seq)
+	id1, _ := NewUUIDFromTimeSeq(exs[0].t, exs[0].seq)
+	id2, _ := NewUUIDFromTimeSeq(exs[1].t, exs[1].seq)
 	if id1.Time() != id2.Time() {
 		m.Errorf("Time should be equal %v is %v", id1, id2)
 	}
@@ -77,10 +77,10 @@ func Test_MadeUUIDTimeIsOrdered(m *testing.T) {
 		{time.Date(2019, 10, 11, 11, 11, 1, 100, loc), 9},
 	}
 
-	id1, _ := NewUUIDFromTime(exs[0].t, exs[0].seq)
-	id2, _ := NewUUIDFromTime(exs[1].t, exs[1].seq)
-	id3, _ := NewUUIDFromTime(exs[1].t, exs[1].seq)
-	id4, _ := NewUUIDFromTime(exs[2].t, exs[2].seq)
+	id1, _ := NewUUIDFromTimeSeq(exs[0].t, exs[0].seq)
+	id2, _ := NewUUIDFromTimeSeq(exs[1].t, exs[1].seq)
+	id3, _ := NewUUIDFromTimeSeq(exs[1].t, exs[1].seq)
+	id4, _ := NewUUIDFromTimeSeq(exs[2].t, exs[2].seq)
 	if UUIDComparator(id1, id2) >= 0 {
 		m.Errorf("Time id1 should be less than id2 was %d %v is %v", UUIDComparator(id1, id2), id1.Time(), id2.Time())
 	}
@@ -116,33 +116,33 @@ func Test_NewUUIDIsEqualToNewUUIDFromTime(m *testing.T) {
 	sec, nano := id1.Time().UnixTime()
 	t1 := time.Unix(sec, nano)
 
-	//id2, _ := NewUUIDFromTime(t1, uint16(id1.ClockSequence()))
-	id2, _ := NewUUIDFromTimeNode(t1, uint16(id1.ClockSequence()), id1.NodeID())
+	//id2, _ := NewUUIDFromTimeSeq(t1, uint16(id1.ClockSequence()))
+	id2, _ := NewUUIDFromTimeSeqNode(t1, uint16(id1.ClockSequence()), id1.NodeID())
 	if UUIDComparator(id1, id2) != 0 {
 		m.Errorf("Time id1 should be equal id2 was %d", UUIDComparator(id1, id2))
-		dumptime(m, id1)
-		dumptime(m, id2)
+		dumptime(m, id1, "id2 eq")
+		dumptime(m, id2, "id2 eq")
 	}
 }
 
 func Test_MixedNewUUIDFromTimeAndNewUIDAreOrdered(m *testing.T) {
-	id1, _ := uuid.NewUUID()
-	id2, _ := NewUUIDFromTime(time.Now(), uint16(id1.ClockSequence()+1)) // bit of cheat really but tests can fail
-	id3, _ := uuid.NewUUID()
+	id1, _ := NewUUIDFromTimeSeq(time.Now(), 1)
+	id2, _ := NewUUIDFromTimeSeq(time.Now(), 2)
+	id3, _ := NewUUIDFromTimeSeq(time.Now(), 3)
 	if UUIDComparator(id1, id2) >= 0 {
 		m.Errorf("Time id1 should be less than id2 was %d %v is %v", UUIDComparator(id1, id2), id1.Time(), id2.Time())
-		dumptime(m, id1)
-		dumptime(m, id2)
+		dumptime(m, id1, "id1 mix time")
+		dumptime(m, id2, "id2 mix time")
 	}
 	if UUIDComparator(id2, id3) >= 0 {
 		m.Errorf("Time id2 should be less than id3 was %d %v is %v", UUIDComparator(id2, id3), id2.Time(), id3.Time())
-		dumptime(m, id2)
-		dumptime(m, id3)
+		dumptime(m, id2, "id2a mix")
+		dumptime(m, id3, "id3 mix")
 	}
 }
 
-func dumptime(m *testing.T, id uuid.UUID) {
-	m.Errorf("Time id1 %d, %d, %v %s", id.Time(), id.ClockSequence(), id.Version(), hex.Dump(id[:]))
+func dumptime(m *testing.T, id uuid.UUID, msg string) {
+	m.Errorf("Time %s %d, %d, %v %s", msg, id.Time(), id.ClockSequence(), id.Version(), hex.Dump(id[:]))
 	dumpbytes(id[:])
 }
 

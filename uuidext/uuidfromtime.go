@@ -19,20 +19,26 @@ const (
 // There are use cases for generating timeUUIDs for example back filling data
 // The resolution is to 100th of micro second or 7 places
 // See uuid.NewUUID and and uuid.GetTime
-func NewUUIDFromTime(atime time.Time, seq uint16) (uuid.UUID, error) {
-
+func NewUUIDFromTimeSeq(atime time.Time, seq uint16) (uuid.UUID, error) {
 	now := uuid.Time(uint64(atime.UnixNano()/100) + g1582ns100)
-	uuid := generate(now, seq)
-	return uuid, nil
+	auuid := generate(now, seq)
+	return auuid, nil
 }
 
-func NewUUIDFromTimeNode(atime time.Time, seq uint16, nodeid []byte) (uuid.UUID, error) {
+func NewUUIDFromTime(atime time.Time) (uuid.UUID, error) {
+	nano := atime.UnixNano()
+	now := uuid.Time(uint64(nano/100) + g1582ns100)
+	auuid := generate(now, 0)
+	return auuid, nil
+}
+
+func NewUUIDFromTimeSeqNode(atime time.Time, seq uint16, nodeid []byte) (uuid.UUID, error) {
 	now := uuid.Time(uint64(atime.UnixNano()/100) + g1582ns100)
-	uuid := generate(now, seq)
+	auuid := generate(now, seq)
 	// not sure why but this fixes tests
-	uuid[8] |= 0x80
-	copy(uuid[10:], nodeid[:])
-	return uuid, nil
+	auuid[8] |= 0x80
+	copy(auuid[10:], nodeid[:])
+	return auuid, nil
 }
 
 // The ordering is intentionally set up so that the UUIDs
@@ -50,10 +56,10 @@ func generate(atime uuid.Time, seq uint16) uuid.UUID {
 	timeHi := uint16((atime >> 48) & 0x0fff)
 	timeHi |= 0x1000 // Version 1
 
-	var uuid uuid.UUID
-	binary.BigEndian.PutUint32(uuid[0:], timeLow)
-	binary.BigEndian.PutUint16(uuid[4:], timeMid)
-	binary.BigEndian.PutUint16(uuid[6:], timeHi)
-	binary.BigEndian.PutUint16(uuid[8:], seq)
-	return uuid
+	var auuid uuid.UUID
+	binary.BigEndian.PutUint32(auuid[0:], timeLow)
+	binary.BigEndian.PutUint16(auuid[4:], timeMid)
+	binary.BigEndian.PutUint16(auuid[6:], timeHi)
+	binary.BigEndian.PutUint16(auuid[8:], seq)
+	return auuid
 }

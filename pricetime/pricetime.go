@@ -6,7 +6,7 @@ import (
 	"github.com/emirpasic/gods/sets/treeset"
 )
 
-var DuplicateOrder = errors.New("Duplicate Order")
+var DuplicateOrder = errors.New("duplicate order")
 
 type PriceTime interface {
 	Add(order *priceTimeItem) *priceTime

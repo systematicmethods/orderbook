@@ -2,6 +2,7 @@ package pricetime
 
 import (
 	"github.com/google/uuid"
+	"orderbook/uuidext"
 	"time"
 )
 
@@ -21,8 +22,8 @@ type PriceTimeItem interface {
 }
 
 func NewPriceTimeItem(orderid string, price float64, timestamp time.Time, data string) *priceTimeItem {
-	uuid, _ := uuid.NewUUID()
-	return &priceTimeItem{orderid: orderid, price: price, data: data, timestamp: timestamp, timmuuid: uuid}
+	auuid, _ := uuidext.NewUUIDFromTime(timestamp)
+	return &priceTimeItem{orderid: orderid, price: price, data: data, timestamp: timestamp, timmuuid: auuid}
 }
 
 func (p *priceTimeItem) Orderid() string {
