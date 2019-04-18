@@ -6,7 +6,8 @@ stages:
 
 test:
   stage: test
-  tag: docker
+  tags: 
+    - docker
   script:
     - echo "pwd=${PWD} CI_PROJECT_DIR=$CI_PROJECT_DIR GOPATH=$GOPATH"
     - ls -la
@@ -18,7 +19,8 @@ test:
 
 compile:
   stage: build
-  tag: docker
+  tags: 
+    - docker
   script:
     - go build -race -ldflags "-extldflags '-static'" ./...
   except:
