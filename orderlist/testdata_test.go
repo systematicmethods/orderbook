@@ -1,4 +1,4 @@
-package orderbook
+package orderlist
 
 import (
 	"github.com/google/uuid"
@@ -6,7 +6,7 @@ import (
 )
 
 func threeOrders(m *testing.T, orderby OrderOfList) *orderlist {
-	pt := NewOrderList(orderby)
+	pt := NewOrderListStruct(orderby)
 	var err error
 	err = pt.Add(NewOrder("orderid1", 1.2, newID(uuid.NewUUID()), "data"))
 	printerror(err, m)
@@ -26,7 +26,7 @@ func threeOrders(m *testing.T, orderby OrderOfList) *orderlist {
 }
 
 func threeOrdersTwoAtSamePrice(m *testing.T, orderby OrderOfList) *orderlist {
-	pt := NewOrderList(orderby)
+	pt := NewOrderListStruct(orderby)
 	var err error
 	err = pt.Add(NewOrder("orderid1", 1.2, newID(uuid.NewUUID()), "data"))
 	printerror(err, m)

@@ -1,4 +1,4 @@
-package orderbook
+package orderlist
 
 import (
 	"github.com/google/uuid"
@@ -7,12 +7,10 @@ import (
 )
 
 type order struct {
-	orderid   string
-	price     float64
-	timeuuid  uuid.UUID
-	side      Side
-	ordertype OrderType
-	data      string
+	orderid  string
+	price    float64
+	timeuuid uuid.UUID
+	data     string
 }
 
 type Order interface {

@@ -1,12 +1,13 @@
-package orderbook
+package orderlist
 
 import (
 	"github.com/google/uuid"
+	"orderbook/assert"
 	"testing"
 )
 
 func Test_RejectDuplicateOrderID(m *testing.T) {
-	pt := threeOrders(m, TopIsLow)
+	pt := threeOrders(m, LowToHigh)
 	var err error
 	err = pt.Add(NewOrder("orderid2", 1.1, newID(uuid.NewUUID()), "data"))
 	if err != DuplicateOrder {
@@ -22,7 +23,7 @@ func Test_RejectDuplicateOrderID(m *testing.T) {
 
 	orders := pt.GetAll()
 
-	assertequal(m, orders[0].orderid, "orderid3", "RejectDuplicateOrder")
-	assertequal(m, orders[1].orderid, "orderid2", "RejectDuplicateOrder")
-	assertequal(m, orders[2].orderid, "orderid1", "RejectDuplicateOrder")
+	assert.AssertEqual(m, orders[0].orderid, "orderid3", "RejectDuplicateOrder")
+	assert.AssertEqual(m, orders[1].orderid, "orderid2", "RejectDuplicateOrder")
+	assert.AssertEqual(m, orders[2].orderid, "orderid1", "RejectDuplicateOrder")
 }

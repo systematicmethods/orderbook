@@ -1,4 +1,4 @@
-package orderbook
+package orderlist
 
 import (
 	"fmt"
@@ -8,17 +8,18 @@ import (
 type OrderOfList int
 
 const (
-	TopIsLow  OrderOfList = -1 // Sell orders increase in price
-	TopIsHigh             = 1  // Buy orders decrease in price
+	LowToHigh OrderOfList = -1 // Sell orders increase in price
+	HighToLow             = 1  // Buy orders decrease in price
 )
 
 type OrderList interface {
-	Add(order *order) *orderlist
+	Add(order *order) error
 	Top() *order
-	RemoveByID(orderid string)
+	RemoveByID(orderid string) bool
 	FindByID(orderid string) *order
 	FindByPrice(price float64) []*order
 	GetAll() []*order
+	Size() int
 }
 
 type orderlist struct {
@@ -26,15 +27,19 @@ type orderlist struct {
 	ordermap    map[string]*order
 }
 
-func NewOrderList(side OrderOfList) *orderlist {
+func NewOrderListStruct(sort OrderOfList) *orderlist {
 	p := orderlist{}
-	if side == TopIsLow {
+	if sort == LowToHigh {
 		p.orderedlist = treeset.NewWith(sellPriceComparator)
-	} else if side == TopIsHigh {
+	} else if sort == HighToLow {
 		p.orderedlist = treeset.NewWith(buyPriceComparator)
 	}
 	p.ordermap = make(map[string]*order)
 	return &p
+}
+
+func NewOrderList(sort OrderOfList) OrderList {
+	return NewOrderListStruct(sort)
 }
 
 func (p *orderlist) Add(order *order) error {
@@ -50,7 +55,7 @@ func (p *orderlist) Size() int {
 	return p.orderedlist.Size()
 }
 
-func (p *orderlist) Remove(orderid string) bool {
+func (p *orderlist) RemoveByID(orderid string) bool {
 	if ord := p.FindByID(orderid); ord != nil {
 		p.orderedlist.Remove(ord)
 		delete(p.ordermap, orderid)
