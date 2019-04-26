@@ -11,6 +11,8 @@ type OrderBook interface {
 	NewOrder(order NewOrderEvent) error
 	BuySize() int
 	SellSize() int
+	BuyOrders() []orderlist.Order
+	SellOrders() []orderlist.Order
 }
 
 func MakeOrderBook(instrument instrument.Instrument) OrderBook {
@@ -48,6 +50,14 @@ func (b *orderbook) SellSize() int {
 
 func (b *orderbook) Instrument() *instrument.Instrument {
 	return b.instrument
+}
+
+func (b *orderbook) BuyOrders() []orderlist.Order {
+	return b.buyOrders.Orders()
+}
+
+func (b *orderbook) SellOrders() []orderlist.Order {
+	return b.sellOrders.Orders()
 }
 
 func newID(uuid uuid.UUID, _ error) uuid.UUID {

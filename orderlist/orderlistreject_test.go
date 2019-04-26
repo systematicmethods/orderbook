@@ -21,9 +21,9 @@ func Test_RejectDuplicateOrderID(m *testing.T) {
 		m.Error("Price Error", pti.Price())
 	}
 
-	orders := pt.GetAll()
+	orders := pt.Orders()
 
-	assert.AssertEqual(m, orders[0].orderid, "orderid3", "RejectDuplicateOrder")
-	assert.AssertEqual(m, orders[1].orderid, "orderid2", "RejectDuplicateOrder")
-	assert.AssertEqual(m, orders[2].orderid, "orderid1", "RejectDuplicateOrder")
+	assert.AssertEqualT(m, orders[0].Orderid(), "orderid3", "RejectDuplicateOrder")
+	assert.AssertEqualT(m, orders[1].Orderid(), "orderid2", "RejectDuplicateOrder")
+	assert.AssertEqualT(m, orders[2].Orderid(), "orderid1", "RejectDuplicateOrder")
 }

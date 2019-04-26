@@ -4,6 +4,7 @@ type order struct {
 	orderevent EventType
 	orderid    string
 	price      float64
+	quantity   int64
 	side       Side
 	ordertype  OrderType
 	data       string
@@ -23,6 +24,10 @@ func (p *order) Orderid() string {
 
 func (p *order) Price() float64 {
 	return p.price
+}
+
+func (p *order) Quantity() int64 {
+	return p.quantity
 }
 
 func (p *order) Data() string {

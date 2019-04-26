@@ -17,6 +17,7 @@ type Order interface {
 	Orderid() string
 	Price() float64
 	Timestamp() time.Time
+	UUID() uuid.UUID
 	Data() string
 }
 
@@ -34,6 +35,10 @@ func (p *order) Price() float64 {
 
 func (p *order) Timestamp() time.Time {
 	return time.Unix(p.timeuuid.Time().UnixTime())
+}
+
+func (p *order) UUID() uuid.UUID {
+	return p.timeuuid
 }
 
 func (p *order) Data() string {

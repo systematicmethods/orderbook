@@ -59,7 +59,7 @@ func Test_AddLotsOfOrdersAtSamePriceLevel(m *testing.T) {
 		m.Errorf("Size not %d was %d", len(exs), pt.Size())
 	}
 
-	orders := pt.GetAll()
+	orders := pt.Orders()
 	for i := 0; i < 10; i++ {
 		assertequal(m, orders[i].Orderid(), fmt.Sprintf("oid%d", i), "AddLotsOfOrdersAtSamePriceLevel")
 	}

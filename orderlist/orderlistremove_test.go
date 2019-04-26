@@ -13,11 +13,11 @@ func Test_RemoveOrder(m *testing.T) {
 		m.Error("Size not 2 was", pt.Size())
 	}
 
-	orders := pt.GetAll()
-	assert.AssertEqual(m, orders[0].orderid, "orderid3", "RemoveOrder")
-	assert.AssertEqual(m, orders[1].orderid, "orderid2", "RemoveOrder")
-	assert.AssertEqual(m, orders[0].price, 1.0, "RemoveOrder")
-	assert.AssertEqual(m, orders[1].price, 1.1, "RemoveOrder")
+	orders := pt.Orders()
+	assert.AssertEqualT(m, orders[0].Orderid(), "orderid3", "RemoveOrder")
+	assert.AssertEqualT(m, orders[1].Orderid(), "orderid2", "RemoveOrder")
+	assert.AssertEqualT(m, orders[0].Price(), 1.0, "RemoveOrder")
+	assert.AssertEqualT(m, orders[1].Price(), 1.1, "RemoveOrder")
 
 	if pt.RemoveByID("orderid1") != false {
 		m.Errorf("Second remove should be false")

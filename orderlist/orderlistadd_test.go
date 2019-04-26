@@ -14,14 +14,14 @@ func Test_AddThreeOrdersSellSide(m *testing.T) {
 		m.Error("Price Error", pti.price, pti.orderid)
 	}
 
-	orders := pt.GetAll()
+	orders := pt.Orders()
 
-	assert.AssertEqual(m, orders[0].orderid, "orderid2", "AddThreeOrders")
-	assert.AssertEqual(m, orders[1].orderid, "orderid3", "AddThreeOrders")
-	assert.AssertEqual(m, orders[2].orderid, "orderid1", "AddThreeOrders")
-	assert.AssertEqual(m, orders[0].price, 1.1, "RejectDuplicateOrder")
-	assert.AssertEqual(m, orders[1].price, 1.1, "RejectDuplicateOrder")
-	assert.AssertEqual(m, orders[2].price, 1.2, "RejectDuplicateOrder")
+	assert.AssertEqualT(m, orders[0].Orderid(), "orderid2", "AddThreeOrders")
+	assert.AssertEqualT(m, orders[1].Orderid(), "orderid3", "AddThreeOrders")
+	assert.AssertEqualT(m, orders[2].Orderid(), "orderid1", "AddThreeOrders")
+	assert.AssertEqualT(m, orders[0].Price(), 1.1, "RejectDuplicateOrder")
+	assert.AssertEqualT(m, orders[1].Price(), 1.1, "RejectDuplicateOrder")
+	assert.AssertEqualT(m, orders[2].Price(), 1.2, "RejectDuplicateOrder")
 }
 
 func Test_AddThreeOrdersBuySide(m *testing.T) {
@@ -31,14 +31,14 @@ func Test_AddThreeOrdersBuySide(m *testing.T) {
 		m.Error("Price Error", pti.price, pti.orderid)
 	}
 
-	orders := pt.GetAll()
+	orders := pt.Orders()
 
-	assert.AssertEqual(m, orders[0].orderid, "orderid1", "AddThreeOrders")
-	assert.AssertEqual(m, orders[1].orderid, "orderid2", "AddThreeOrders")
-	assert.AssertEqual(m, orders[2].orderid, "orderid3", "AddThreeOrders")
-	assert.AssertEqual(m, orders[0].price, 1.2, "RejectDuplicateOrder")
-	assert.AssertEqual(m, orders[1].price, 1.1, "RejectDuplicateOrder")
-	assert.AssertEqual(m, orders[2].price, 1.1, "RejectDuplicateOrder")
+	assert.AssertEqualT(m, orders[0].Orderid(), "orderid1", "AddThreeOrders")
+	assert.AssertEqualT(m, orders[1].Orderid(), "orderid2", "AddThreeOrders")
+	assert.AssertEqualT(m, orders[2].Orderid(), "orderid3", "AddThreeOrders")
+	assert.AssertEqualT(m, orders[0].Price(), 1.2, "RejectDuplicateOrder")
+	assert.AssertEqualT(m, orders[1].Price(), 1.1, "RejectDuplicateOrder")
+	assert.AssertEqualT(m, orders[2].Price(), 1.1, "RejectDuplicateOrder")
 }
 
 func Test_AddThreeOrdersBuySideGeneratedTime(m *testing.T) {
@@ -56,8 +56,8 @@ func Test_AddThreeOrdersBuySideGeneratedTime(m *testing.T) {
 
 	if pt.Size() != 3 {
 		m.Error("Size not 3 was", pt.Size())
-		for _, pti := range pt.GetAll() {
-			dumptime(m, pti.timeuuid, pti.orderid)
+		for _, pti := range pt.Orders() {
+			dumptime(m, pti.UUID(), pti.Orderid())
 		}
 	}
 
@@ -65,12 +65,12 @@ func Test_AddThreeOrdersBuySideGeneratedTime(m *testing.T) {
 		m.Error("Price Error", pti.price, pti.orderid)
 	}
 
-	orders := pt.GetAll()
+	orders := pt.Orders()
 
-	assert.AssertEqual(m, orders[0].orderid, "orderid1", "AddThreeOrders")
-	assert.AssertEqual(m, orders[1].orderid, "orderid2", "AddThreeOrders")
-	assert.AssertEqual(m, orders[2].orderid, "orderid3", "AddThreeOrders")
-	assert.AssertEqual(m, orders[0].price, 1.2, "RejectDuplicateOrder")
-	assert.AssertEqual(m, orders[1].price, 1.1, "RejectDuplicateOrder")
-	assert.AssertEqual(m, orders[2].price, 1.1, "RejectDuplicateOrder")
+	assert.AssertEqualT(m, orders[0].Orderid(), "orderid1", "AddThreeOrders")
+	assert.AssertEqualT(m, orders[1].Orderid(), "orderid2", "AddThreeOrders")
+	assert.AssertEqualT(m, orders[2].Orderid(), "orderid3", "AddThreeOrders")
+	assert.AssertEqualT(m, orders[0].Price(), 1.2, "RejectDuplicateOrder")
+	assert.AssertEqualT(m, orders[1].Price(), 1.1, "RejectDuplicateOrder")
+	assert.AssertEqualT(m, orders[2].Price(), 1.1, "RejectDuplicateOrder")
 }

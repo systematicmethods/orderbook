@@ -4,12 +4,16 @@ import (
 	"fmt"
 	"github.com/DATA-DOG/godog"
 	"github.com/DATA-DOG/godog/gherkin"
+	"github.com/rdumont/assistdog"
+	"orderbook/assert"
 	"orderbook/instrument"
 	"orderbook/orderbook"
+	"orderbook/orderlist"
+	"strconv"
 )
 
 var pending = fmt.Errorf("Pending")
-
+var assit = assistdog.NewDefault()
 var bk orderbook.OrderBook
 
 func anOrderBookForInstrument(inst string) error {
@@ -19,8 +23,9 @@ func anOrderBookForInstrument(inst string) error {
 }
 
 func usersSendOrdersWith(table *gherkin.DataTable) error {
-	for _, row := range table.Rows[1:] {
-		order := orderbook.MakeNewOrderEvent(row.Cells[1].Value, 1, orderbook.Limit, orderbook.Buy, "")
+	slice, _ := assit.ParseSlice(table)
+	for _, row := range slice {
+		order := makeOrder(row)
 		bk.NewOrder(order)
 	}
 	return nil
@@ -34,11 +39,24 @@ func awaitExecutions(num int) error {
 }
 
 func executionsShouldBe(table *gherkin.DataTable) error {
-	for _, row := range table.Rows[1:] {
-		order := orderbook.MakeNewOrderEvent(row.Cells[1].Value, 1, orderbook.Limit, orderbook.Buy, "")
-		bk.NewOrder(order)
+	slice, _ := assit.ParseSlice(table)
+	for _, row := range slice {
+		var other orderlist.Order
+		order := makeOrder(row)
+		if order.Side() == orderbook.Sell {
+			other = bk.SellOrders()[0]
+		} else {
+			other = bk.BuyOrders()[0]
+
+		}
+		if err := assert.AssertEqual(other.Orderid(), order.Orderid(), "orderid should be the same"); err != nil {
+			return err
+		}
+		if err := assert.AssertEqual(other.Price(), order.Price(), "price should be the same"); err != nil {
+			return err
+		}
 	}
-	return godog.ErrPending
+	return nil
 }
 
 func FeatureContextLimitOrder(s *godog.Suite) {
@@ -48,6 +66,11 @@ func FeatureContextLimitOrder(s *godog.Suite) {
 	s.Step(`^executions should be:$`, executionsShouldBe)
 }
 
-func makeOrderFromRow(row *gherkin.TableRow) orderbook.OrderEvent {
-	return orderbook.MakeNewOrderEvent(row.Cells[1].Value, 1, orderbook.Limit, orderbook.Buy, "")
+func makeOrder(row map[string]string) orderbook.OrderEvent {
+	price, _ := strconv.ParseFloat(row["Price"], 64)
+	return orderbook.MakeNewOrderEvent(row["ClOrdID"],
+		price,
+		orderbook.OrderTypeConv(row["OrdType"]),
+		orderbook.SideConv(row["Side"]),
+		"")
 }

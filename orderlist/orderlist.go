@@ -18,7 +18,7 @@ type OrderList interface {
 	RemoveByID(orderid string) bool
 	FindByID(orderid string) *order
 	FindByPrice(price float64) []*order
-	GetAll() []*order
+	Orders() []Order
 	Size() int
 }
 
@@ -70,8 +70,8 @@ func (p *orderlist) Top() *order {
 	return iter.Value().(*order)
 }
 
-func (p *orderlist) GetAll() []*order {
-	var orders []*order
+func (p *orderlist) Orders() []Order {
+	var orders []Order
 	for iter := p.orderedlist.Iterator(); iter.Next() == true; {
 		order := iter.Value().(*order)
 		orders = append(orders, order)
