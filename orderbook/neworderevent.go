@@ -15,7 +15,7 @@ type NewOrderEvent interface {
 }
 
 func MakeNewOrderEvent(orderid string, price float64, ordertype OrderType, side Side, data string) NewOrderEvent {
-	return NewOrderEvent(&order{orderevent: NewOrderET, orderid: orderid, price: price, ordertype: ordertype, side: side, data: data})
+	return NewOrderEvent(&order{orderevent: EventTypeNewOrder, orderid: orderid, price: price, ordertype: ordertype, side: side, data: data})
 }
 
 func (p *order) Orderid() string {

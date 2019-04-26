@@ -5,17 +5,17 @@ import "strings"
 type Side int
 
 const (
-	Sell         Side = -1
-	Buy               = 1
-	side_unknown      = 2
+	SideSell    Side = -1
+	SideBuy          = 1
+	SideUnknown      = 2
 )
 
 func SideConv(side string) Side {
 	switch strings.ToLower(side) {
 	case "sell":
-		return Sell
+		return SideSell
 	case "buy":
-		return Buy
+		return SideBuy
 	}
-	return side_unknown
+	return SideUnknown
 }

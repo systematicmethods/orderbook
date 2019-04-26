@@ -31,7 +31,7 @@ type orderbook struct {
 func (b *orderbook) NewOrder(neworder NewOrderEvent) error {
 	if neworder.Orderid() != "" {
 		order := orderlist.NewOrder(neworder.Orderid(), neworder.Price(), newID(uuid.NewUUID()), "data")
-		if neworder.Side() == Buy {
+		if neworder.Side() == SideBuy {
 			b.buyOrders.Add(order)
 		} else {
 			b.sellOrders.Add(order)

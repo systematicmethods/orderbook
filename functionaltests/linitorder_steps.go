@@ -43,7 +43,7 @@ func executionsShouldBe(table *gherkin.DataTable) error {
 	for _, row := range slice {
 		var other orderlist.Order
 		order := makeOrder(row)
-		if order.Side() == orderbook.Sell {
+		if order.Side() == orderbook.SideSell {
 			other = bk.SellOrders()[0]
 		} else {
 			other = bk.BuyOrders()[0]

@@ -11,9 +11,9 @@ func Test_OrderBook_AddBuySellOrder(t *testing.T) {
 	bk := MakeOrderBook(ins)
 	assert.AssertEqualT(t, *bk.Instrument(), ins, "instrument same")
 
-	buy := MakeNewOrderEvent("id", 1.01, Limit, Buy, "")
+	buy := MakeNewOrderEvent("id", 1.01, OrderTypeLimit, SideBuy, "")
 	bk.NewOrder(buy)
-	sell := MakeNewOrderEvent("id", 1.03, Limit, Sell, "")
+	sell := MakeNewOrderEvent("id", 1.03, OrderTypeLimit, SideSell, "")
 	bk.NewOrder(sell)
 
 	assert.AssertEqualT(t, bk.BuySize(), 1, "buy size should be 1")

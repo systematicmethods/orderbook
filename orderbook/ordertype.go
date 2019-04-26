@@ -3,20 +3,20 @@ package orderbook
 type OrderType rune
 
 const (
-	Market            OrderType = '1'
-	Limit                       = '2'
-	Stop                        = '3'
-	OrderType_unknown           = 'U'
+	OrderTypeMarket  OrderType = '1'
+	OrderTypeLimit             = '2'
+	OrderTypeStop              = '3'
+	OrderTypeUnknown           = 'U'
 )
 
 func OrderTypeConv(ordertype string) OrderType {
 	switch ordertype {
 	case "Limit":
-		return Limit
+		return OrderTypeLimit
 	case "Market":
-		return Market
+		return OrderTypeMarket
 	case "Stop":
-		return Stop
+		return OrderTypeStop
 	}
-	return OrderType_unknown
+	return OrderTypeUnknown
 }
