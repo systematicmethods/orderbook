@@ -1,0 +1,40 @@
+@startuml
+[*] --> NewOrder: NewOrder
+NewOrder --> OrderAccepted: Accept
+NewOrder --> OrderRejected: Reject
+NewOrder: Record Event
+NewOrder: Validate Order
+
+OrderRejected --> [*]: Done
+OrderRejected: Record Event
+OrderRejected: Send Order Reject
+
+OrderAccepted --> Cancelled: Cancel
+OrderAccepted: Record Event
+OrderAccepted: Add to OrderBook
+OrderAccepted: Send Order Ack
+OrderAccepted: Match orders by price / time
+OrderAccepted --> Filled: Match Order
+OrderAccepted --> PartiallyFilled: Match Order
+OrderAccepted --> OrderAccepted: No Match
+
+PartiallyFilled --> PartiallyFilled: Match Order
+PartiallyFilled --> Filled: Match Order
+PartiallyFilled --> Cancelled: Cancel
+PartiallyFilled: Record Event
+PartiallyFilled: Update order states
+PartiallyFilled: Send fill for both orders
+
+Cancelled --> [*]: Done
+Cancelled: Record Event
+Cancelled: Update order state
+Cancelled: Remove from OrderBook
+Cancelled: Send Order Cancelled
+
+Filled --> [*]: Done
+Filled: Record Event
+Filled: Update order states
+Filled: Remove from OrderBook
+Filled: Send fill for both orders
+
+@enduml
