@@ -8,6 +8,7 @@ NewOrder: Validate Order
 OrderRejected --> [*]: Done
 OrderRejected: Record Event
 OrderRejected: Send Order Reject
+OrderRejected --> CancelRejected: Cancel
 
 OrderAccepted --> Cancelled: Cancel
 OrderAccepted: Record Event
@@ -26,6 +27,7 @@ PartiallyFilled: Update order states
 PartiallyFilled: Send fill for both orders
 
 Cancelled --> [*]: Done
+Cancelled --> CancelRejected: Cancel
 Cancelled: Record Event
 Cancelled: Update order state
 Cancelled: Remove from OrderBook
@@ -36,5 +38,10 @@ Filled: Record Event
 Filled: Update order states
 Filled: Remove from OrderBook
 Filled: Send fill for both orders
+Filled --> CancelRejected: Cancel
+
+CancelRejected --> [*]: Done
+CancelRejected: Record Event
+CancelRejected: Send Cancel Rejected
 
 @enduml
