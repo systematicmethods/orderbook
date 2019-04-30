@@ -27,6 +27,7 @@ compile:
   except:
     changes:
       - README.md
+      - doc/*
 #  artifacts:
 #    paths:
 #    - $CI_PROJECT_DIR/cmd/helloworld
