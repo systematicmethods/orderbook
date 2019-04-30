@@ -11,8 +11,8 @@ OrderRejected: Send Order Reject
 
 OrderAccepted --> Cancelled: Cancel
 OrderAccepted: Record Event
-OrderAccepted: Add to OrderBook
 OrderAccepted: Send Order Ack
+OrderAccepted: Add to OrderBook
 OrderAccepted: Match orders by price / time
 OrderAccepted --> Filled: Match Order
 OrderAccepted --> PartiallyFilled: Match Order
