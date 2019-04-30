@@ -1,0 +1,10 @@
+@startuml
+participant Client1 order 10
+participant Client2 order 20
+participant OrderBook order 30
+
+Client1 -> OrderBook: New Order (id1 Buy 50 ABC @11.11)
+OrderBook --> Client1: New Order Reject (reason)
+Client2 -> OrderBook: New Order (id1 Sell 50 ABC @11.11)
+OrderBook --> Client2: New Order Reject (reason)
+@enduml
