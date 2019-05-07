@@ -42,6 +42,6 @@ Filled --> CancelRejected: Cancel
 
 CancelRejected --> [*]: Done
 CancelRejected: Record Event
-CancelRejected: Send Cancel Rejected
+CancelRejected: Send Cancel Rejected (reason)
 
 @enduml
