@@ -65,7 +65,7 @@ func FeatureContextLimitOrder(s *godog.Suite) {
 	s.Step(`^executions should be:$`, executionsShouldBe)
 }
 
-func makeOrder(row map[string]string) orderbook.OrderEvent {
+func makeOrder(row map[string]string) orderbook.NewOrderSingle {
 	price, _ := strconv.ParseFloat(row["Price"], 64)
 	return orderbook.MakeNewOrderEvent(row["ClOrdID"],
 		price,

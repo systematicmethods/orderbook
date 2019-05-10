@@ -7,7 +7,7 @@ import (
 
 type OrderBook interface {
 	Instrument() *instrument.Instrument
-	NewOrder(order NewOrderEvent) error
+	NewOrder(order NewOrderSingle) error
 	BuySize() int
 	SellSize() int
 	BuyOrders() []Order
@@ -27,7 +27,7 @@ type orderbook struct {
 	sellOrders OrderList
 }
 
-func (b *orderbook) NewOrder(neworder NewOrderEvent) error {
+func (b *orderbook) NewOrder(neworder NewOrderSingle) error {
 	if neworder.OrderID() != "" {
 		order := NewOrder(neworder.OrderID(), neworder.Price(), newID(uuid.NewUUID()), "data")
 		if neworder.Side() == SideBuy {

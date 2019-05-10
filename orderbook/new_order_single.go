@@ -2,13 +2,13 @@ package orderbook
 
 import "time"
 
-type OrderEvent interface {
+type NewOrderSingle interface {
 	OrderID() string
 	Price() float64
-	Quantity() int64
+	OrderQty() int64
 	OrderType() OrderType
 	Side() Side
-	ClientOrderID() string
+	ClOrdID() string
 	ClientID() string
 	InstrumentID() string
 	TimeInForce() TimeInForce
@@ -17,20 +17,26 @@ type OrderEvent interface {
 	Data() string
 }
 
+func MakeNewOrderEvent(orderid string, price float64, ordertype OrderType, side Side, data string) NewOrderSingle {
+	return NewOrderSingle(&orderEvent{eventType: EventTypeNewOrder, orderID: orderid, price: price, orderType: ordertype, side: side, data: data})
+}
+
 type orderEvent struct {
-	eventType     EventType
-	orderID       string
-	price         float64
-	quantity      int64
-	side          Side
-	orderType     OrderType
-	clientOrderID string
-	clientID      string
-	instrumentID  string
-	timeInForce   TimeInForce
-	expireOn      time.Time
-	transactTime  time.Time
-	data          string
+	instrumentID string
+	clientID     string
+	clOrdID      string
+	side         Side
+
+	price        float64
+	orderQty     int64
+	orderType    OrderType
+	timeInForce  TimeInForce
+	expireOn     time.Time
+	transactTime time.Time
+
+	eventType EventType
+	orderID   string
+	data      string
 }
 
 func (p *orderEvent) OrderID() string {
@@ -41,8 +47,8 @@ func (p *orderEvent) Price() float64 {
 	return p.price
 }
 
-func (p *orderEvent) Quantity() int64 {
-	return p.quantity
+func (p *orderEvent) OrderQty() int64 {
+	return p.orderQty
 }
 
 func (p *orderEvent) Data() string {
@@ -57,8 +63,8 @@ func (p *orderEvent) Side() Side {
 	return p.side
 }
 
-func (p *orderEvent) ClientOrderID() string {
-	return p.clientOrderID
+func (p *orderEvent) ClOrdID() string {
+	return p.clOrdID
 }
 
 func (p *orderEvent) ClientID() string {
