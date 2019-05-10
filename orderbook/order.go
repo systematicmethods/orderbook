@@ -1,4 +1,4 @@
-package orderlist
+package orderbook
 
 import (
 	"github.com/google/uuid"
@@ -7,10 +7,29 @@ import (
 )
 
 type order struct {
-	orderid  string
-	price    float64
-	timeuuid uuid.UUID
-	data     string
+	timeuuid     uuid.UUID
+	instrumentID string
+	clientID     string
+	clOrdID      string
+	side         Side
+
+	price        float64
+	orderQty     int64
+	orderType    OrderType
+	timeInForce  TimeInForce
+	expireOn     time.Time
+	transactTime time.Time
+
+	createdOn time.Time
+	updatedOn time.Time
+
+	orderID   string
+	timestamp uuid.UUID
+
+	leavesQty int64
+	cumQty    int64
+	ordStatus OrdStatus
+	data      string
 }
 
 type Order interface {
@@ -21,12 +40,12 @@ type Order interface {
 	Data() string
 }
 
-func NewOrder(orderid string, price float64, timestamp uuid.UUID, data string) *order {
-	return &order{orderid: orderid, price: price, data: data, timeuuid: timestamp}
+func NewOrder(orderID string, price float64, timestamp uuid.UUID, data string) *order {
+	return &order{orderID: orderID, price: price, data: data, timeuuid: timestamp}
 }
 
 func (p *order) Orderid() string {
-	return p.orderid
+	return p.orderID
 }
 
 func (p *order) Price() float64 {

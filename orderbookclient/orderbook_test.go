@@ -3,7 +3,7 @@ package orderbookclient
 import (
 	"fmt"
 	"github.com/google/uuid"
-	"orderbook/orderlist"
+	"orderbook/orderbook"
 	"testing"
 )
 
@@ -12,13 +12,13 @@ func newID(uuid uuid.UUID, _ error) uuid.UUID {
 }
 
 func Test_AddThreeOrders(m *testing.T) {
-	pt := orderlist.NewOrderList(orderlist.LowToHigh)
+	pt := orderbook.NewOrderList(orderbook.LowToHigh)
 	var err error
-	err = pt.Add(orderlist.NewOrder("orderid1", 1.2, newID(uuid.NewUUID()), "data"))
+	err = pt.Add(orderbook.NewOrder("orderid1", 1.2, newID(uuid.NewUUID()), "data"))
 	printerror(err, m)
-	err = pt.Add(orderlist.NewOrder("orderid2", 1.1, newID(uuid.NewUUID()), "data"))
+	err = pt.Add(orderbook.NewOrder("orderid2", 1.1, newID(uuid.NewUUID()), "data"))
 	printerror(err, m)
-	err = pt.Add(orderlist.NewOrder("orderid3", 1.1, newID(uuid.NewUUID()), "data"))
+	err = pt.Add(orderbook.NewOrder("orderid3", 1.1, newID(uuid.NewUUID()), "data"))
 	printerror(err, m)
 
 	if pt.Size() != 3 {
@@ -48,10 +48,10 @@ func Test_AddLotsOfOrdersAtSamePriceLevel(m *testing.T) {
 		{newID(uuid.NewUUID()), "oid10"},
 	}
 
-	pt := orderlist.NewOrderList(orderlist.LowToHigh)
+	pt := orderbook.NewOrderList(orderbook.LowToHigh)
 	var err error
 	for _, auuid := range exs {
-		err = pt.Add(orderlist.NewOrder(auuid.oid, 1.2, auuid.id, "data"))
+		err = pt.Add(orderbook.NewOrder(auuid.oid, 1.2, auuid.id, "data"))
 		printerror(err, m)
 	}
 

@@ -8,7 +8,6 @@ import (
 	"orderbook/assert"
 	"orderbook/instrument"
 	"orderbook/orderbook"
-	"orderbook/orderlist"
 	"strconv"
 )
 
@@ -41,7 +40,7 @@ func awaitExecutions(num int) error {
 func executionsShouldBe(table *gherkin.DataTable) error {
 	slice, _ := assit.ParseSlice(table)
 	for _, row := range slice {
-		var other orderlist.Order
+		var other orderbook.Order
 		order := makeOrder(row)
 		if order.Side() == orderbook.SideSell {
 			other = bk.SellOrders()[0]
@@ -49,7 +48,7 @@ func executionsShouldBe(table *gherkin.DataTable) error {
 			other = bk.BuyOrders()[0]
 
 		}
-		if err := assert.AssertEqual(other.Orderid(), order.Orderid(), "orderid should be the same"); err != nil {
+		if err := assert.AssertEqual(other.Orderid(), order.OrderID(), "orderid should be the same"); err != nil {
 			return err
 		}
 		if err := assert.AssertEqual(other.Price(), order.Price(), "price should be the same"); err != nil {

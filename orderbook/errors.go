@@ -1,4 +1,4 @@
-package orderlist
+package orderbook
 
 import "errors"
 

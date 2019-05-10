@@ -1,8 +1,8 @@
 package instrument
 
 type Instrument interface {
-	InstrumentID() string
-	InstrumentName() string
+	ID() string
+	Name() string
 }
 
 func MakeInstrument(id string, name string) *instrument {
@@ -16,10 +16,10 @@ type instrument struct {
 	minsize int
 }
 
-func (i *instrument) InstrumentID() string {
+func (i *instrument) ID() string {
 	return i.id
 }
 
-func (i *instrument) InstrumentName() string {
+func (i *instrument) Name() string {
 	return i.name
 }

@@ -2,12 +2,12 @@ package orderbook
 
 import "strings"
 
-type Side int
+type Side rune
 
 const (
-	SideSell    Side = -1
-	SideBuy          = 1
-	SideUnknown      = 2
+	SideBuy     Side = '1'
+	SideSell         = '2'
+	SideUnknown      = 'u'
 )
 
 func SideConv(side string) Side {

@@ -1,4 +1,4 @@
-package orderlist
+package orderbook
 
 import (
 	"encoding/hex"
@@ -11,10 +11,6 @@ func printerror(err error, m *testing.T) {
 	if err != nil {
 		m.Errorf("Add order failed %v", err)
 	}
-}
-
-func newID(uuid uuid.UUID, _ error) uuid.UUID {
-	return uuid
 }
 
 func dumptime(m *testing.T, id uuid.UUID, msg string) {

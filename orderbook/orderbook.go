@@ -3,7 +3,6 @@ package orderbook
 import (
 	"github.com/google/uuid"
 	"orderbook/instrument"
-	"orderbook/orderlist"
 )
 
 type OrderBook interface {
@@ -11,26 +10,26 @@ type OrderBook interface {
 	NewOrder(order NewOrderEvent) error
 	BuySize() int
 	SellSize() int
-	BuyOrders() []orderlist.Order
-	SellOrders() []orderlist.Order
+	BuyOrders() []Order
+	SellOrders() []Order
 }
 
 func MakeOrderBook(instrument instrument.Instrument) OrderBook {
 	b := orderbook{instrument: &instrument}
-	b.buyOrders = orderlist.NewOrderList(orderlist.HighToLow)
-	b.sellOrders = orderlist.NewOrderList(orderlist.HighToLow)
+	b.buyOrders = NewOrderList(HighToLow)
+	b.sellOrders = NewOrderList(HighToLow)
 	return OrderBook(&b)
 }
 
 type orderbook struct {
 	instrument *instrument.Instrument
-	buyOrders  orderlist.OrderList
-	sellOrders orderlist.OrderList
+	buyOrders  OrderList
+	sellOrders OrderList
 }
 
 func (b *orderbook) NewOrder(neworder NewOrderEvent) error {
-	if neworder.Orderid() != "" {
-		order := orderlist.NewOrder(neworder.Orderid(), neworder.Price(), newID(uuid.NewUUID()), "data")
+	if neworder.OrderID() != "" {
+		order := NewOrder(neworder.OrderID(), neworder.Price(), newID(uuid.NewUUID()), "data")
 		if neworder.Side() == SideBuy {
 			b.buyOrders.Add(order)
 		} else {
@@ -52,11 +51,11 @@ func (b *orderbook) Instrument() *instrument.Instrument {
 	return b.instrument
 }
 
-func (b *orderbook) BuyOrders() []orderlist.Order {
+func (b *orderbook) BuyOrders() []Order {
 	return b.buyOrders.Orders()
 }
 
-func (b *orderbook) SellOrders() []orderlist.Order {
+func (b *orderbook) SellOrders() []Order {
 	return b.sellOrders.Orders()
 }
 

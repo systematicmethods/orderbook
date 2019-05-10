@@ -1,4 +1,4 @@
-package orderlist
+package orderbook
 
 import (
 	"orderbook/assert"
@@ -10,8 +10,8 @@ import (
 func Test_AddThreeOrdersSellSide(m *testing.T) {
 	pt := threeOrdersTwoAtSamePrice(m, LowToHigh)
 
-	if pti := pt.Top(); pti.orderid != "orderid2" {
-		m.Error("Price Error", pti.price, pti.orderid)
+	if pti := pt.Top(); pti.orderID != "orderid2" {
+		m.Error("Price Error", pti.price, pti.orderID)
 	}
 
 	orders := pt.Orders()
@@ -27,8 +27,8 @@ func Test_AddThreeOrdersSellSide(m *testing.T) {
 func Test_AddThreeOrdersBuySide(m *testing.T) {
 	pt := threeOrdersTwoAtSamePrice(m, HighToLow)
 
-	if pti := pt.Top(); pti.orderid != "orderid1" {
-		m.Error("Price Error", pti.price, pti.orderid)
+	if pti := pt.Top(); pti.orderID != "orderid1" {
+		m.Error("Price Error", pti.price, pti.orderID)
 	}
 
 	orders := pt.Orders()
@@ -61,8 +61,8 @@ func Test_AddThreeOrdersBuySideGeneratedTime(m *testing.T) {
 		}
 	}
 
-	if pti := pt.Top(); pti.orderid != "orderid1" {
-		m.Error("Price Error", pti.price, pti.orderid)
+	if pti := pt.Top(); pti.orderID != "orderid1" {
+		m.Error("Price Error", pti.price, pti.orderID)
 	}
 
 	orders := pt.Orders()
