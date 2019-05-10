@@ -1,0 +1,10 @@
+@startuml
+participant Client1 order 10
+participant OrderBook order 30
+
+Client1 -> OrderBook: New Order (id1 Buy 50 ABC @11.11)
+OrderBook --> Client1: New Order Ack (id1)
+
+Client1 -> OrderBook: Replace Order (id1 100)
+OrderBook --> Client1: Order Replaced (id1)
+@enduml

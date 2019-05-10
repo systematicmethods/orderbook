@@ -1,0 +1,18 @@
+@startuml
+participant Client1 order 10
+participant Client2 order 20
+participant OrderBook order 30
+
+Client1 -> OrderBook: New Order (id1 Buy 50 ABC @11.11)
+OrderBook --> Client1: New Order Ack (id1)
+
+Client2 -> OrderBook: New Order (id2 Sell 50 ABC @11.00)
+OrderBook --> Client2: New Order Ack (id2)
+
+Client1 -> OrderBook: Cancel Order (id1)
+OrderBook --> Client1: Order Cancel Rejected (id1)
+
+OrderBook --> Client1: Order Fill (id1 50 @11.11 rem 0)
+OrderBook --> Client2: Order Fill (id2 50 @11.11 rem 0)
+
+@enduml

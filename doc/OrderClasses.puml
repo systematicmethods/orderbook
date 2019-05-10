@@ -1,0 +1,99 @@
+@startuml
+skinparam defaultFontName Courier
+
+
+class orderState {
+	instrumentID    string
+	clientID        string
+	clOrdID         string
+	side            Side
+
+	price           float64
+	orderQty        int64
+	orderType       OrderType
+	timeInForce     TimeInForce
+	expireOn        time.Time
+	transactTime    time.Time
+
+	createdOn       time.Time
+	updatedOn       time.Time
+
+	orderID         uuid.UUID
+    timestamp       uuid.UUID
+
+	leavesQty       int64
+	cumQty          int64
+	ordStatus       OrdStatus
+}
+
+class newOrderSingle {
+	instrumentID    string
+	clientID        string
+	clOrdID         string
+	side            Side
+
+	price           float64
+	orderQty        int64
+	orderType       OrderType
+	timeInForce     TimeInForce
+	expireOn        time.Time
+	transactTime    time.Time
+}
+
+class executionReport {
+	instrumentID    string
+	clientID        string
+	clOrdID         string
+	side            Side
+
+	lastQty         int64
+	lastPrice       float64
+	execType        ExecType
+
+	leavesQty       int64
+	cumQty          int64
+	ordStatus       OrdStatus
+
+	orderID         uuid.UUID
+	execID          uuid.UUID
+	orderQty        int64
+	transactTime    time.Time
+}
+
+class orderCancelRequest {
+	instrumentID    string
+	clientID        string
+	clOrdID         string
+	side            Side
+
+	origClOrdID     string
+	transactTime    time.Time
+}
+
+class orderCancelReplaceRequest {
+	instrumentID    string
+	clientID        string
+	clOrdID         string
+	side            Side
+
+	origClOrdID     string
+	transactTime    time.Time
+	orderQty        int64
+}
+
+class orderCancelReject {
+	instrumentID    string
+	clientID        string
+	clOrdID         string
+	side            Side
+
+	orderID         uuid.UUID
+	rejectID        uuid.UUID
+	origClOrdID     string
+    ordStatus       OrdStatus
+	cxlRejReason    CxlRejReason
+	transactTime    time.Time
+}
+
+
+@enduml
