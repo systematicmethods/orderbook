@@ -1,32 +1,33 @@
 package orderbook
 
-import "time"
+import (
+	"github.com/google/uuid"
+	"time"
+)
 
 type NewOrderSingle interface {
-	OrderID() string
+	InstrumentID() string
+	ClientID() string
+	ClOrdID() string
+
+	Side() Side
 	Price() float64
 	OrderQty() int64
 	OrderType() OrderType
-	Side() Side
-	ClOrdID() string
-	ClientID() string
-	InstrumentID() string
 	TimeInForce() TimeInForce
 	ExpireOn() time.Time
 	TransactTime() time.Time
+
+	OrderID() string
 	Data() string
 }
 
-func MakeNewOrderEvent(orderid string, price float64, ordertype OrderType, side Side, data string) NewOrderSingle {
-	return NewOrderSingle(&orderEvent{eventType: EventTypeNewOrder, orderID: orderid, price: price, orderType: ordertype, side: side, data: data})
-}
-
-type orderEvent struct {
+type newOrderSingle struct {
 	instrumentID string
 	clientID     string
 	clOrdID      string
-	side         Side
 
+	side         Side
 	price        float64
 	orderQty     int64
 	orderType    OrderType
@@ -39,50 +40,105 @@ type orderEvent struct {
 	data      string
 }
 
-func (p *orderEvent) OrderID() string {
+func MakeNewOrderLimit(
+	instrumentID string,
+	clientID string,
+	clOrdID string,
+	side Side,
+	price float64,
+	orderQty int64,
+	timeInForce TimeInForce,
+	expireOn time.Time,
+	transactTime time.Time) NewOrderSingle {
+	theOrderID, _ := uuid.NewUUID()
+	return NewOrderSingle(&newOrderSingle{
+		instrumentID,
+		clientID,
+		clOrdID,
+		side,
+		price,
+		orderQty,
+		OrderTypeLimit,
+		timeInForce,
+		expireOn,
+		transactTime,
+		EventTypeNewOrderSingle,
+		theOrderID.String(),
+		"",
+	})
+}
+
+func MakeNewOrderMarket(
+	instrumentID string,
+	clientID string,
+	clOrdID string,
+	side Side,
+	orderQty int64,
+	timeInForce TimeInForce,
+	expireOn time.Time,
+	transactTime time.Time) NewOrderSingle {
+	theOrderID, _ := uuid.NewUUID()
+	return NewOrderSingle(&newOrderSingle{
+		instrumentID,
+		clientID,
+		clOrdID,
+		side,
+		0,
+		orderQty,
+		OrderTypeMarket,
+		timeInForce,
+		expireOn,
+		transactTime,
+		EventTypeNewOrderSingle,
+		theOrderID.String(),
+		"",
+	})
+}
+
+func (p *newOrderSingle) OrderID() string {
 	return p.orderID
 }
 
-func (p *orderEvent) Price() float64 {
+func (p *newOrderSingle) Price() float64 {
 	return p.price
 }
 
-func (p *orderEvent) OrderQty() int64 {
+func (p *newOrderSingle) OrderQty() int64 {
 	return p.orderQty
 }
 
-func (p *orderEvent) Data() string {
+func (p *newOrderSingle) Data() string {
 	return p.data
 }
 
-func (p *orderEvent) OrderType() OrderType {
+func (p *newOrderSingle) OrderType() OrderType {
 	return p.orderType
 }
 
-func (p *orderEvent) Side() Side {
+func (p *newOrderSingle) Side() Side {
 	return p.side
 }
 
-func (p *orderEvent) ClOrdID() string {
+func (p *newOrderSingle) ClOrdID() string {
 	return p.clOrdID
 }
 
-func (p *orderEvent) ClientID() string {
+func (p *newOrderSingle) ClientID() string {
 	return p.clientID
 }
 
-func (p *orderEvent) InstrumentID() string {
+func (p *newOrderSingle) InstrumentID() string {
 	return p.instrumentID
 }
 
-func (p *orderEvent) TimeInForce() TimeInForce {
+func (p *newOrderSingle) TimeInForce() TimeInForce {
 	return p.timeInForce
 }
 
-func (p *orderEvent) ExpireOn() time.Time {
+func (p *newOrderSingle) ExpireOn() time.Time {
 	return p.expireOn
 }
 
-func (p *orderEvent) TransactTime() time.Time {
+func (p *newOrderSingle) TransactTime() time.Time {
 	return p.transactTime
 }
