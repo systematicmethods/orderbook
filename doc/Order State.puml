@@ -1,37 +1,43 @@
 @startuml
-[*] --> NewOrder: NewOrder
-NewOrder --> OrderAccepted: Accept
-NewOrder --> OrderRejected: Reject
-NewOrder: Record Event
-NewOrder: Validate Order
+[*] --> PendingOrder: NewOrder
+PendingOrder --> New: Accept
+PendingOrder --> Rejected: Reject
+PendingOrder: Record Event
+PendingOrder: Validate Order
 
-OrderRejected --> [*]: Done
-OrderRejected: Record Event
-OrderRejected: Send Order Reject
-OrderRejected --> CancelRejected: Cancel
+Rejected --> [*]: Done
+Rejected: Record Event
+Rejected: Send Order Reject
+Rejected --> CancelRejected: Cancel
 
-OrderAccepted --> Cancelled: Cancel
-OrderAccepted: Record Event
-OrderAccepted: Send Order Ack
-OrderAccepted: Add to OrderBook
-OrderAccepted: Match orders by price / time
-OrderAccepted --> Filled: Match Order
-OrderAccepted --> PartiallyFilled: Match Order
-OrderAccepted --> OrderAccepted: No Match
+New --> Canceled: Cancel
+New: Record Event
+New: Send Order Ack
+New: Add to OrderBook
+New: Match orders by price / time
+New --> Filled: Match Order
+New --> PartiallyFilled: Match Order
+New --> New: No Match
+New --> New: Amend Order (smaller)
+New --> Canceled: Amend Order (smaller)
+New --> Expired: Expire
 
 PartiallyFilled --> PartiallyFilled: Match Order
+PartiallyFilled --> PartiallyFilled: Amend Order (smaller)
+PartiallyFilled --> Canceled: Amend Order (smaller)
 PartiallyFilled --> Filled: Match Order
-PartiallyFilled --> Cancelled: Cancel
+PartiallyFilled --> Canceled: Cancel
 PartiallyFilled: Record Event
 PartiallyFilled: Update order states
 PartiallyFilled: Send fill for both orders
+PartiallyFilled --> Expired: Expire
 
-Cancelled --> [*]: Done
-Cancelled --> CancelRejected: Cancel
-Cancelled: Record Event
-Cancelled: Update order state
-Cancelled: Remove from OrderBook
-Cancelled: Send Order Cancelled
+Canceled --> [*]: Done
+Canceled --> CancelRejected: Cancel
+Canceled: Record Event
+Canceled: Update order state
+Canceled: Remove from OrderBook
+Canceled: Send Order Canceled
 
 Filled --> [*]: Done
 Filled: Record Event
@@ -39,6 +45,12 @@ Filled: Update order states
 Filled: Remove from OrderBook
 Filled: Send fill for both orders
 Filled --> CancelRejected: Cancel
+
+Expired --> [*]: Done
+Expired: Record Event
+Expired: Update order states
+Expired: Send order Expired
+Expired: Remove from OrderBook
 
 CancelRejected --> [*]: Done
 CancelRejected: Record Event
