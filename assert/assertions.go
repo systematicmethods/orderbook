@@ -8,7 +8,7 @@ import (
 
 func AssertEqualT(t *testing.T, a interface{}, b interface{}, msg string) bool {
 	if a != b {
-		t.Errorf("%s was %v != %v", msg, a, b)
+		t.Errorf("%s was '%v' != '%v'", msg, a, b)
 		return false
 	}
 	return true
@@ -16,13 +16,13 @@ func AssertEqualT(t *testing.T, a interface{}, b interface{}, msg string) bool {
 
 func AssertEqual(a interface{}, b interface{}, msg string) error {
 	if a != b {
-		return fmt.Errorf("%s was %v != %v", msg, a, b)
+		return fmt.Errorf("%s was '%v' != '%v'", msg, a, b)
 	}
 	return nil
 }
 
 func AssertEqualTD(t *testing.T, a interface{}, b interface{}, msg string) {
-	fmt.Printf("debug a=%v b=%v", a, b)
+	fmt.Printf("debug a='%v' b='%v'", a, b)
 	AssertEqualT(t, a, b, msg)
 }
 
@@ -33,16 +33,16 @@ func AssertNotEqualT(t *testing.T, a interface{}, b interface{}, msg string) {
 }
 
 func AssertNotNilT(t *testing.T, a interface{}, msg string) bool {
-	if reflect.ValueOf(a).IsNil() {
-		t.Errorf("%s %s is nil", msg, a)
+	if reflect.TypeOf(a) == nil {
+		t.Errorf("%s '%s' is nil", msg, a)
 		return false
 	}
 	return true
 }
 
 func AssertNilT(t *testing.T, a interface{}, msg string) bool {
-	if !reflect.ValueOf(a).IsNil() {
-		t.Errorf("%s %v not nil", msg, a)
+	if reflect.TypeOf(a) != nil {
+		t.Errorf("%s '%v' not nil", msg, a)
 		return false
 	}
 	return true
