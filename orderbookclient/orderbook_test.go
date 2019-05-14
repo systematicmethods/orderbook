@@ -14,19 +14,19 @@ func newID(uuid uuid.UUID, _ error) uuid.UUID {
 func Test_AddThreeOrders(m *testing.T) {
 	pt := orderbook.NewOrderList(orderbook.LowToHigh)
 	var err error
-	err = pt.Add(orderbook.NewOrder("orderid1", 1.2, newID(uuid.NewUUID()), "data"))
+	err = pt.Add(orderbook.NewOrder2("clordid1", "orderid1", 1.2, newID(uuid.NewUUID()), "data"))
 	printerror(err, m)
-	err = pt.Add(orderbook.NewOrder("orderid2", 1.1, newID(uuid.NewUUID()), "data"))
+	err = pt.Add(orderbook.NewOrder2("clordid2", "orderid2", 1.1, newID(uuid.NewUUID()), "data"))
 	printerror(err, m)
-	err = pt.Add(orderbook.NewOrder("orderid3", 1.1, newID(uuid.NewUUID()), "data"))
+	err = pt.Add(orderbook.NewOrder2("clordid3", "orderid3", 1.1, newID(uuid.NewUUID()), "data"))
 	printerror(err, m)
 
 	if pt.Size() != 3 {
 		m.Error("Size not 3 was", pt.Size())
 	}
 
-	if pti := pt.Top(); pti.Orderid() != "orderid2" {
-		m.Error("Price Error", pti.Price(), pti.Orderid())
+	if pti := pt.Top(); pti.OrderID() != "orderid2" {
+		m.Error("Price Error", pti.Price(), pti.OrderID())
 	}
 }
 
@@ -51,7 +51,7 @@ func Test_AddLotsOfOrdersAtSamePriceLevel(m *testing.T) {
 	pt := orderbook.NewOrderList(orderbook.LowToHigh)
 	var err error
 	for _, auuid := range exs {
-		err = pt.Add(orderbook.NewOrder(auuid.oid, 1.2, auuid.id, "data"))
+		err = pt.Add(orderbook.NewOrder2("cloridid", auuid.oid, 1.2, auuid.id, "data"))
 		printerror(err, m)
 	}
 
@@ -61,7 +61,7 @@ func Test_AddLotsOfOrdersAtSamePriceLevel(m *testing.T) {
 
 	orders := pt.Orders()
 	for i := 0; i < 10; i++ {
-		assertequal(m, orders[i].Orderid(), fmt.Sprintf("oid%d", i), "AddLotsOfOrdersAtSamePriceLevel")
+		assertequal(m, orders[i].OrderID(), fmt.Sprintf("oid%d", i), "AddLotsOfOrdersAtSamePriceLevel")
 	}
 }
 

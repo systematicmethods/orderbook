@@ -3,6 +3,7 @@ package orderbook
 import (
 	"github.com/google/uuid"
 	"orderbook/instrument"
+	"time"
 )
 
 type OrderBook interface {
@@ -29,7 +30,7 @@ type orderbook struct {
 
 func (b *orderbook) NewOrder(neworder NewOrderSingle) error {
 	if neworder.OrderID() != "" {
-		order := NewOrder(neworder.OrderID(), neworder.Price(), newID(uuid.NewUUID()), "data")
+		order := NewOrder(neworder, newID(uuid.NewUUID()), time.Now())
 		if neworder.Side() == SideBuy {
 			b.buyOrders.Add(order)
 		} else {

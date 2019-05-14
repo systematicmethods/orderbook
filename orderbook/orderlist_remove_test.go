@@ -14,8 +14,8 @@ func Test_RemoveOrder(m *testing.T) {
 	}
 
 	orders := pt.Orders()
-	assert.AssertEqualT(m, orders[0].Orderid(), "orderid3", "RemoveOrder")
-	assert.AssertEqualT(m, orders[1].Orderid(), "orderid2", "RemoveOrder")
+	assert.AssertEqualT(m, orders[0].OrderID(), "orderid3", "RemoveOrder")
+	assert.AssertEqualT(m, orders[1].OrderID(), "orderid2", "RemoveOrder")
 	assert.AssertEqualT(m, orders[0].Price(), 1.0, "RemoveOrder")
 	assert.AssertEqualT(m, orders[1].Price(), 1.1, "RemoveOrder")
 

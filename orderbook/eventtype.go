@@ -3,7 +3,7 @@ package orderbook
 type EventType int
 
 const (
-	EventTypeNewOrder EventType = iota
+	EventTypeNewOrderSingle EventType = iota
 	EventTypeNewOrderAck
 	EventTypeNewOrderRejected
 	EventTypeCancel
