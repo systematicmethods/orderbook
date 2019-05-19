@@ -18,7 +18,7 @@ func threeOrders(m *testing.T, orderby OrderOfList) *orderlist {
 	if pt.Size() != 3 {
 		m.Error("Size not 3 was", pt.Size())
 		for _, pti := range pt.Orders() {
-			dumptime(m, pti.UUID(), pti.OrderID())
+			dumptime(m, pti.Timestamp(), pti.OrderID())
 		}
 	}
 
@@ -38,7 +38,7 @@ func threeOrdersTwoAtSamePrice(m *testing.T, orderby OrderOfList) *orderlist {
 	if pt.Size() != 3 {
 		m.Error("Size not 3 was", pt.Size())
 		for _, pti := range pt.Orders() {
-			dumptime(m, pti.UUID(), pti.OrderID())
+			dumptime(m, pti.Timestamp(), pti.OrderID())
 		}
 	}
 

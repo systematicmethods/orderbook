@@ -15,6 +15,7 @@ import (
 var pending = fmt.Errorf("Pending")
 var assit = assistdog.NewDefault()
 var bk orderbook.OrderBook
+var execs = make(map[string]orderbook.ExecutionReport)
 
 func anOrderBookForInstrument(inst string) error {
 	ins := instrument.MakeInstrument(inst, inst+"name")
@@ -26,13 +27,17 @@ func usersSendOrdersWith(table *gherkin.DataTable) error {
 	slice, _ := assit.ParseSlice(table)
 	for _, row := range slice {
 		order := makeOrder(row)
-		bk.NewOrder(order)
+		exec, _ := bk.NewOrder(order)
+		execs[exec.ClOrdID()] = exec
 	}
 	return nil
 }
 
 func awaitExecutions(num int) error {
 	if (bk.BuySize() + bk.SellSize()) == num {
+		return nil
+	}
+	if len(execs) == num {
 		return nil
 	}
 	return fmt.Errorf("did not get %d execs, got %d instead", num, (bk.BuySize() + bk.SellSize()))
@@ -48,6 +53,9 @@ func executionsShouldBe(table *gherkin.DataTable) error {
 		} else {
 			other = bk.BuyOrders()[0]
 
+		}
+		if err := assert.AssertEqual(execs[order.ClOrdID()].ClOrdID(), order.ClOrdID(), "clOrdID should be the same"); err != nil {
+			return err
 		}
 		if err := assert.AssertEqual(other.ClOrdID(), order.ClOrdID(), "clOrdID should be the same"); err != nil {
 			return err
