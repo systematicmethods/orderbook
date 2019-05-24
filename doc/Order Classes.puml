@@ -38,6 +38,9 @@ class newOrderSingle {
 	timeInForce     TimeInForce
 	expireOn        time.Time
 	transactTime    time.Time
+
+    orderID         string
+	eventType       EventType
 }
 
 class executionReport {
@@ -54,10 +57,12 @@ class executionReport {
 	cumQty          int64
 	ordStatus       OrdStatus
 
-	orderID         uuid.UUID
-	execID          uuid.UUID
+	orderID         string
+	execID          string
 	orderQty        int64
 	transactTime    time.Time
+
+	eventType       EventType
 }
 
 class orderCancelRequest {
@@ -68,6 +73,9 @@ class orderCancelRequest {
 
 	origClOrdID     string
 	transactTime    time.Time
+
+    orderID         string
+	eventType       EventType
 }
 
 class orderCancelReplaceRequest {
@@ -79,6 +87,9 @@ class orderCancelReplaceRequest {
 	origClOrdID     string
 	transactTime    time.Time
 	orderQty        int64
+
+    orderID         string
+	eventType       EventType
 }
 
 class orderCancelReject {
@@ -93,6 +104,9 @@ class orderCancelReject {
     ordStatus       OrdStatus
 	cxlRejReason    CxlRejReason
 	transactTime    time.Time
+
+    orderID         string
+	eventType       EventType
 }
 
 
