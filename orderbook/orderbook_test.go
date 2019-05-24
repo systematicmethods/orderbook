@@ -41,15 +41,3 @@ func makeorder(clOrdID string, side Side, qty int64, price float64) NewOrderSing
 		dt,
 		dt)
 }
-
-//func Test_OrderBook_CancelOrder(t *testing.T) {
-//	ins := instrument.MakeInstrument(inst, "ABV Investments")
-//	bk := MakeOrderBook(ins)
-//	assert.AssertEqualT(t, *bk.Instrument(), ins, "instrument same")
-//
-//	buy := MakeNewOrderLimit("id", 1.01, OrderTypeLimit, SideBuy, "")
-//	bk.NewOrder2(buy)
-//
-//	assert.AssertEqualT(t, bk.BuySize(), 1, "buy size should be 1")
-//	t.Errorf("Pending")
-//}

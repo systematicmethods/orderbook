@@ -4,7 +4,7 @@ type ExecType rune
 
 const (
 	ExecTypeNew                            ExecType = '0'
-	DoneForDay                                      = '3'
+	ExecTypeDoneForDay                              = '3'
 	ExecTypeCanceled                                = '4'
 	ExecTypeReplaced                                = '5'
 	ExecTypePendingCancel                           = '6'
@@ -25,4 +25,27 @@ const (
 	ExecTypeTriggeredOrActivatedBySystem            = 'L'
 	ExecTypeLocked                                  = 'M'
 	ExecTypeReleased                                = 'N'
+	ExecTypeUnknown                                 = 'x'
 )
+
+func ExecTypeConv(thetype string) ExecType {
+	switch thetype {
+	case "New":
+		return ExecTypeNew
+	case "PartiallyFilled":
+		return ExecTypeTrade
+	case "Filled":
+		return ExecTypeTrade
+	case "Canceled":
+		return ExecTypeCanceled
+	case "Rejected":
+		return ExecTypeRejected
+	case "Replaced":
+		return ExecTypeReplaced
+	case "DoneForDay":
+		return ExecTypeDoneForDay
+	case "Expired":
+		return ExecTypeExpired
+	}
+	return ExecTypeUnknown
+}

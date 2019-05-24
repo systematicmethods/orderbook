@@ -47,11 +47,11 @@ func Test_AddThreeOrdersBuySideGeneratedTime(m *testing.T) {
 	pt := NewOrderListStruct(HighToLow)
 	var err error
 
-	err = pt.Add(NewOrder2("clordid1", "orderid1", 1.2, newID(uuidext.NewUUIDFromTimeSeq(dt, 1)), "data"))
+	err = pt.Add(newOrderForTesting("clordid1", "orderid1", 1.2, newID(uuidext.NewUUIDFromTimeSeq(dt, 1)), "data"))
 	printerror(err, m)
-	err = pt.Add(NewOrder2("clordid2", "orderid2", 1.1, newID(uuidext.NewUUIDFromTimeSeq(dt, 2)), "data"))
+	err = pt.Add(newOrderForTesting("clordid2", "orderid2", 1.1, newID(uuidext.NewUUIDFromTimeSeq(dt, 2)), "data"))
 	printerror(err, m)
-	err = pt.Add(NewOrder2("clordid3", "orderid3", 1.1, newID(uuidext.NewUUIDFromTimeSeq(dt, 3)), "data"))
+	err = pt.Add(newOrderForTesting("clordid3", "orderid3", 1.1, newID(uuidext.NewUUIDFromTimeSeq(dt, 3)), "data"))
 	printerror(err, m)
 
 	if pt.Size() != 3 {

@@ -5,10 +5,42 @@ type EventType int
 const (
 	EventTypeNewOrderSingle EventType = iota
 	EventTypeNewOrderAck
-	EventTypeNewOrderRejected
+	EventTypeRejected
 	EventTypeCancel
+	EventTypeCancelled
+	EventTypeReplaced
 	EventTypeCancelAck
 	EventTypeCancelRejected
+	EventTypePartialFill
 	EventTypeFill
+	EventTypeDoneForDay
+	EventTypeExpired
 	EventTypeDone
+	EventTypeUnknown
 )
+
+func EventTypeConv(thetype string) EventType {
+	switch thetype {
+	case "NewOrder":
+		return EventTypeNewOrderSingle
+	case "NewOrderAck":
+		return EventTypeNewOrderAck
+	case "PartiallyFilled":
+		return EventTypePartialFill
+	case "Filled":
+		return EventTypeFill
+	case "Cancel":
+		return EventTypeCancel
+	case "Cancelled":
+		return EventTypeCancelled
+	case "Rejected":
+		return EventTypeRejected
+	case "Replaced":
+		return EventTypeReplaced
+	case "Done":
+		return EventTypeDone
+	case "Expired":
+		return EventTypeExpired
+	}
+	return EventTypeUnknown
+}

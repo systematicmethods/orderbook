@@ -9,7 +9,7 @@ import (
 func Test_RejectDuplicateOrderID(m *testing.T) {
 	pt := threeOrders(m, LowToHigh)
 	var err error
-	err = pt.Add(NewOrder2("clordid2", "orderid2", 1.1, newID(uuid.NewUUID()), "data"))
+	err = pt.Add(newOrderForTesting("clordid2", "orderid2", 1.1, newID(uuid.NewUUID()), "data"))
 	if err != DuplicateOrder {
 		m.Errorf("err should be %v was %v", DuplicateOrder, err)
 	}

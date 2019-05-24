@@ -9,10 +9,11 @@ import (
 type OrderBook interface {
 	Instrument() *instrument.Instrument
 	NewOrder(order NewOrderSingle) (ExecutionReport, error)
+	CancelOrder(order OrderCancelRequest) (ExecutionReport, error)
 	BuySize() int
 	SellSize() int
-	BuyOrders() []Order
-	SellOrders() []Order
+	BuyOrders() []OrderState
+	SellOrders() []OrderState
 }
 
 func MakeOrderBook(instrument instrument.Instrument) OrderBook {
@@ -28,16 +29,29 @@ type orderbook struct {
 	sellOrders OrderList
 }
 
-func (b *orderbook) NewOrder(neworder NewOrderSingle) (ExecutionReport, error) {
-	if neworder.OrderID() != "" {
-		order := NewOrder(neworder, newID(uuid.NewUUID()), time.Now())
-		if neworder.Side() == SideBuy {
+func (b *orderbook) NewOrder(order NewOrderSingle) (ExecutionReport, error) {
+	if order.OrderID() != "" {
+		order := NewOrder(order, newID(uuid.NewUUID()), time.Now())
+		if order.Side() == SideBuy {
 			b.buyOrders.Add(order)
 		} else {
 			b.sellOrders.Add(order)
 		}
 		return MakeNewOrderAckExecutionReport(order), nil
 	}
+	return nil, nil
+}
+
+func (b *orderbook) CancelOrder(order OrderCancelRequest) (ExecutionReport, error) {
+	//if order.OrderID() != "" {
+	//	if order.Side() == SideBuy {
+	//		b.buyOrders.FindByID()
+	//		b.buyOrders.Add(order)
+	//	} else {
+	//		b.sellOrders.Add(order)
+	//	}
+	//	return MakeNewOrderAckExecutionReport(order), nil
+	//}
 	return nil, nil
 }
 
@@ -53,11 +67,11 @@ func (b *orderbook) Instrument() *instrument.Instrument {
 	return b.instrument
 }
 
-func (b *orderbook) BuyOrders() []Order {
+func (b *orderbook) BuyOrders() []OrderState {
 	return b.buyOrders.Orders()
 }
 
-func (b *orderbook) SellOrders() []Order {
+func (b *orderbook) SellOrders() []OrderState {
 	return b.sellOrders.Orders()
 }
 

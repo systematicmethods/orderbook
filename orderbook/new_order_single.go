@@ -19,7 +19,6 @@ type NewOrderSingle interface {
 	TransactTime() time.Time
 
 	OrderID() string
-	Data() string
 }
 
 type newOrderSingle struct {
@@ -37,7 +36,6 @@ type newOrderSingle struct {
 
 	eventType EventType
 	orderID   string
-	data      string
 }
 
 func MakeNewOrderLimit(
@@ -64,7 +62,6 @@ func MakeNewOrderLimit(
 		transactTime,
 		EventTypeNewOrderSingle,
 		theOrderID.String(),
-		"",
 	})
 }
 
@@ -91,7 +88,6 @@ func MakeNewOrderMarket(
 		transactTime,
 		EventTypeNewOrderSingle,
 		theOrderID.String(),
-		"",
 	})
 }
 
@@ -105,10 +101,6 @@ func (p *newOrderSingle) Price() float64 {
 
 func (p *newOrderSingle) OrderQty() int64 {
 	return p.orderQty
-}
-
-func (p *newOrderSingle) Data() string {
-	return p.data
 }
 
 func (p *newOrderSingle) OrderType() OrderType {

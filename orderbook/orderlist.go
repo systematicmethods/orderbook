@@ -13,18 +13,18 @@ const (
 )
 
 type OrderList interface {
-	Add(order Order) error
-	Top() Order
+	Add(order OrderState) error
+	Top() OrderState
 	RemoveByID(orderid string) bool
-	FindByID(orderid string) Order
-	FindByPrice(price float64) []Order
-	Orders() []Order
+	FindByID(orderid string) OrderState
+	FindByPrice(price float64) []OrderState
+	Orders() []OrderState
 	Size() int
 }
 
 type orderlist struct {
 	orderedlist *treeset.Set
-	ordermap    map[string]Order
+	ordermap    map[string]OrderState
 }
 
 func NewOrderListStruct(sort OrderOfList) *orderlist {
@@ -34,7 +34,7 @@ func NewOrderListStruct(sort OrderOfList) *orderlist {
 	} else if sort == HighToLow {
 		p.orderedlist = treeset.NewWith(buyPriceComparator)
 	}
-	p.ordermap = make(map[string]Order)
+	p.ordermap = make(map[string]OrderState)
 	return &p
 }
 
@@ -42,7 +42,7 @@ func NewOrderList(sort OrderOfList) OrderList {
 	return NewOrderListStruct(sort)
 }
 
-func (p *orderlist) Add(order Order) error {
+func (p *orderlist) Add(order OrderState) error {
 	if ord := p.ordermap[order.OrderID()]; ord != nil {
 		return DuplicateOrder
 	}
@@ -64,31 +64,31 @@ func (p *orderlist) RemoveByID(orderid string) bool {
 	return false
 }
 
-func (p *orderlist) Top() Order {
+func (p *orderlist) Top() OrderState {
 	var iter = p.orderedlist.Iterator()
 	iter.Next()
-	return iter.Value().(Order)
+	return iter.Value().(OrderState)
 }
 
-func (p *orderlist) Orders() []Order {
-	var orders []Order
+func (p *orderlist) Orders() []OrderState {
+	var orders []OrderState
 	for iter := p.orderedlist.Iterator(); iter.Next() == true; {
-		order := iter.Value().(Order)
+		order := iter.Value().(OrderState)
 		orders = append(orders, order)
 	}
 	return orders
 }
 
-func (p *orderlist) FindByID(orderid string) Order {
+func (p *orderlist) FindByID(orderid string) OrderState {
 	return p.ordermap[orderid]
 }
 
-func (p *orderlist) FindByPrice(price float64) []Order {
-	var orders []Order
+func (p *orderlist) FindByPrice(price float64) []OrderState {
+	var orders []OrderState
 
 	for iter := p.orderedlist.Iterator(); iter.Next(); {
-		if floatEquals(iter.Value().(Order).Price(), price) {
-			order := iter.Value().(Order)
+		if floatEquals(iter.Value().(OrderState).Price(), price) {
+			order := iter.Value().(OrderState)
 			orders = append(orders, order)
 			fmt.Println("order", order)
 		}

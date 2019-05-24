@@ -47,7 +47,7 @@ type executionReport struct {
 	eventType EventType
 }
 
-func MakeNewOrderAckExecutionReport(ord Order) ExecutionReport {
+func MakeNewOrderAckExecutionReport(ord OrderState) ExecutionReport {
 	theExecID, _ := uuid.NewUUID()
 	return ExecutionReport(&executionReport{
 		ord.InstrumentID(),
@@ -81,10 +81,10 @@ func MakeExecutionReport(
 	cumQty int64,
 	ordStatus OrdStatus,
 	orderID string,
+	execID string,
 	orderQty int64,
 	transactTime time.Time,
 ) ExecutionReport {
-	theExecID, _ := uuid.NewUUID()
 	return ExecutionReport(&executionReport{
 		instrumentID,
 		clientID,
@@ -97,7 +97,7 @@ func MakeExecutionReport(
 		cumQty,
 		ordStatus,
 		orderID,
-		theExecID.String(),
+		execID,
 		orderQty,
 		transactTime,
 		eventType,

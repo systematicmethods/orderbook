@@ -5,9 +5,9 @@ import (
 	"github.com/DATA-DOG/godog"
 	"github.com/DATA-DOG/godog/gherkin"
 	"github.com/rdumont/assistdog"
-	"orderbook/assert"
 	"orderbook/instrument"
 	"orderbook/orderbook"
+	"reflect"
 	"strconv"
 	"time"
 )
@@ -15,7 +15,30 @@ import (
 var pending = fmt.Errorf("Pending")
 var assit = assistdog.NewDefault()
 var bk orderbook.OrderBook
-var execs = make(map[string]orderbook.ExecutionReport)
+var execs []orderbook.ExecutionReport
+var orders []orderbook.OrderEvent
+var loc, _ = time.LoadLocation("UTC")
+
+const (
+	tabEvent       string = "Event"
+	tabClientID           = "ClientID"
+	tabInstrument         = "Instrument"
+	tabSide               = "Side"
+	tabOrdType            = "OrdType"
+	tabClOrdID            = "ClOrdID"
+	tabOrigClOrdID        = "OrigClOrdID"
+	tabPrice              = "Price"
+	tabQty                = "Qty"
+	tabExpireOn           = "ExpireOn"
+	tabTimeInForce        = "TimeInForce"
+	tabStatus             = "Status"
+	tabReason             = "Reason"
+	tabExecID             = "ExecID"
+	tabOrderID            = "OrderID"
+	tabLastQty            = "LastQty"
+	tabLastPrice          = "LastPrice"
+	tabCumQty             = "CumQty"
+)
 
 func anOrderBookForInstrument(inst string) error {
 	ins := instrument.MakeInstrument(inst, inst+"name")
@@ -26,9 +49,18 @@ func anOrderBookForInstrument(inst string) error {
 func usersSendOrdersWith(table *gherkin.DataTable) error {
 	slice, _ := assit.ParseSlice(table)
 	for _, row := range slice {
-		order := makeOrder(row)
-		exec, _ := bk.NewOrder(order)
-		execs[exec.ClOrdID()] = exec
+		switch orderbook.EventTypeConv(row[tabEvent]) {
+		case orderbook.EventTypeNewOrderSingle:
+			order := makeOrder(row)
+			exec, _ := bk.NewOrder(order)
+			execs = append(execs, exec)
+			orders = append(orders, order)
+		case orderbook.EventTypeCancel:
+			order := makeCancelOrder(row)
+			exec, _ := bk.CancelOrder(order)
+			execs = append(execs, exec)
+			orders = append(orders, order)
+		}
 	}
 	return nil
 }
@@ -45,22 +77,14 @@ func awaitExecutions(num int) error {
 
 func executionsShouldBe(table *gherkin.DataTable) error {
 	slice, _ := assit.ParseSlice(table)
+	var expectedExecs []orderbook.ExecutionReport
 	for _, row := range slice {
-		var other orderbook.Order
-		order := makeOrder(row)
-		if order.Side() == orderbook.SideSell {
-			other = bk.SellOrders()[0]
-		} else {
-			other = bk.BuyOrders()[0]
-
-		}
-		if err := assert.AssertEqual(execs[order.ClOrdID()].ClOrdID(), order.ClOrdID(), "clOrdID should be the same"); err != nil {
-			return err
-		}
-		if err := assert.AssertEqual(other.ClOrdID(), order.ClOrdID(), "clOrdID should be the same"); err != nil {
-			return err
-		}
-		if err := assert.AssertEqual(other.Price(), order.Price(), "price should be the same"); err != nil {
+		exec := makeExec(row)
+		expectedExecs = append(expectedExecs, exec)
+	}
+	for k, v := range expectedExecs {
+		fmt.Printf("Execs value[%s]\n", v)
+		if err := compareExec(v, execs[k]); err != nil {
 			return err
 		}
 	}
@@ -75,26 +99,89 @@ func FeatureContextLimitOrder(s *godog.Suite) {
 }
 
 func makeOrder(row map[string]string) orderbook.NewOrderSingle {
-	price, _ := strconv.ParseFloat(row["Price"], 64)
-	qty, _ := strconv.ParseInt(row["Qty"], 64, 64)
-	return makeorder(row["ClOrdID"],
-		orderbook.OrderTypeConv(row["OrdType"]),
-		orderbook.SideConv(row["Side"]),
-		qty,
-		price)
-}
-
-func makeorder(clOrdID string, orderType orderbook.OrderType, side orderbook.Side, qty int64, price float64) orderbook.NewOrderSingle {
-	loc, _ := time.LoadLocation("UTC")
+	price, _ := strconv.ParseFloat(row[tabPrice], 64)
+	qty, _ := strconv.ParseInt(row[tabQty], 64, 64)
 	dt := time.Date(2019, 10, 11, 11, 11, 1, 0, loc)
 	return orderbook.MakeNewOrderLimit(
-		"instrumentID",
-		"clientID",
-		clOrdID,
-		side,
+		row[tabInstrument],
+		row[tabClientID],
+		row[tabClOrdID],
+		orderbook.SideConv(row[tabSide]),
 		price,
 		qty,
-		orderbook.TimeInForceGoodTillCancel,
+		orderbook.TimeInForceConv(row[tabTimeInForce]),
 		dt,
 		dt)
+
+}
+
+func makeCancelOrder(row map[string]string) orderbook.OrderCancelRequest {
+	dt := time.Date(2019, 10, 11, 11, 11, 1, 0, loc)
+	return orderbook.MakeOrderCancelRequest(
+		row[tabInstrument],
+		row[tabClientID],
+		row[tabClOrdID],
+		orderbook.SideConv(row[tabSide]),
+		row[tabOrigClOrdID],
+		dt)
+}
+
+func makeExec(row map[string]string) orderbook.ExecutionReport {
+	dt := time.Date(2019, 10, 11, 11, 11, 1, 0, loc)
+	qty, _ := strconv.ParseInt(row[tabQty], 64, 64)
+	lastqty, _ := strconv.ParseInt(row[tabLastQty], 64, 64)
+	cumqty, _ := strconv.ParseInt(row[tabCumQty], 64, 64)
+	lastprice, _ := strconv.ParseFloat(row[tabLastPrice], 64)
+	leavesQty := qty - cumqty
+	return orderbook.MakeExecutionReport(
+		orderbook.EventTypeConv(row[tabEvent]),
+		row[tabInstrument],
+		row[tabClientID],
+		row[tabClOrdID],
+		orderbook.SideConv(row[tabSide]),
+		lastqty,
+		lastprice,
+		orderbook.ExecTypeConv(row[tabStatus]),
+		leavesQty,
+		cumqty,
+		orderbook.OrdStatusConv(row[tabStatus]),
+		row[tabOrderID],
+		row[tabExecID],
+		qty,
+		dt)
+}
+
+func compareExec(exp orderbook.ExecutionReport, act orderbook.ExecutionReport) error {
+	if act == nil {
+		return fmt.Errorf("act nil")
+	}
+	if exp == nil {
+		return fmt.Errorf("exp nil")
+	}
+	if exp.InstrumentID() != act.InstrumentID() ||
+		exp.ClientID() != act.ClientID() ||
+		exp.ClOrdID() != act.ClOrdID() ||
+		exp.Side() != act.Side() ||
+		exp.LastQty() != act.LastQty() ||
+		exp.LastPrice() != act.LastPrice() ||
+		exp.ExecType() != act.ExecType() ||
+		exp.LeavesQty() != act.LeavesQty() ||
+		exp.CumQty() != act.CumQty() ||
+		exp.OrdStatus() != act.OrdStatus() ||
+		exp.OrderQty() != act.OrderQty() ||
+		!compareID(exp.OrderID(), act.OrderID()) ||
+		!compareID(exp.ExecID(), act.ExecID()) {
+		return fmt.Errorf("Expect %v \nActual %v ", exp, act)
+	}
+	return nil
+}
+
+func compareID(exp string, act string) bool {
+	if exp == "Not Null" || exp == "Not Nil" {
+		if reflect.TypeOf(act) == nil {
+			return false
+		}
+		return true
+	}
+	return exp == act
 }
