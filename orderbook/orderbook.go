@@ -43,15 +43,20 @@ func (b *orderbook) NewOrder(order NewOrderSingle) (ExecutionReport, error) {
 }
 
 func (b *orderbook) CancelOrder(order OrderCancelRequest) (ExecutionReport, error) {
-	//if order.OrderID() != "" {
-	//	if order.Side() == SideBuy {
-	//		b.buyOrders.FindByID()
-	//		b.buyOrders.Add(order)
-	//	} else {
-	//		b.sellOrders.Add(order)
-	//	}
-	//	return MakeNewOrderAckExecutionReport(order), nil
-	//}
+	var ord OrderState
+	if order.Side() == SideBuy {
+		ord = b.buyOrders.FindByClOrdID(order.OrigClOrdID())
+		if ord != nil {
+			b.buyOrders.RemoveByID(ord.OrderID())
+			return MakeCancelOrderExecutionReport(ord, order), nil
+		}
+	} else {
+		ord = b.sellOrders.FindByClOrdID(order.OrigClOrdID())
+		if ord != nil {
+			b.sellOrders.RemoveByID(ord.OrderID())
+			return MakeCancelOrderExecutionReport(ord, order), nil
+		}
+	}
 	return nil, nil
 }
 

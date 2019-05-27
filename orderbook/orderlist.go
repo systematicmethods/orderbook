@@ -17,6 +17,7 @@ type OrderList interface {
 	Top() OrderState
 	RemoveByID(orderid string) bool
 	FindByID(orderid string) OrderState
+	FindByClOrdID(clOrdID string) OrderState
 	FindByPrice(price float64) []OrderState
 	Orders() []OrderState
 	Size() int
@@ -81,6 +82,15 @@ func (p *orderlist) Orders() []OrderState {
 
 func (p *orderlist) FindByID(orderid string) OrderState {
 	return p.ordermap[orderid]
+}
+
+func (p *orderlist) FindByClOrdID(clOrdID string) OrderState {
+	for iter := p.orderedlist.Iterator(); iter.Next(); {
+		if iter.Value().(OrderState).ClOrdID() == clOrdID {
+			return iter.Value().(OrderState)
+		}
+	}
+	return nil
 }
 
 func (p *orderlist) FindByPrice(price float64) []OrderState {

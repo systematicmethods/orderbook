@@ -57,8 +57,8 @@ func MakeNewOrderAckExecutionReport(ord OrderState) ExecutionReport {
 		0,
 		0,
 		ExecTypeNew,
-		ord.OrderQty(),
-		0,
+		ord.LeavesQty(),
+		ord.CumQty(),
 		OrdStatusNew,
 		ord.OrderID(),
 		theExecID.String(),
@@ -68,6 +68,26 @@ func MakeNewOrderAckExecutionReport(ord OrderState) ExecutionReport {
 	})
 }
 
+func MakeCancelOrderExecutionReport(ord OrderState, order OrderCancelRequest) ExecutionReport {
+	theExecID, _ := uuid.NewUUID()
+	return ExecutionReport(&executionReport{
+		ord.InstrumentID(),
+		ord.ClientID(),
+		order.ClOrdID(),
+		ord.Side(),
+		0,
+		0,
+		ExecTypeCanceled,
+		ord.LeavesQty(),
+		ord.CumQty(),
+		OrdStatusCanceled,
+		ord.OrderID(),
+		theExecID.String(),
+		ord.OrderQty(),
+		ord.TransactTime(),
+		EventTypeCancelAck,
+	})
+}
 func MakeExecutionReport(
 	eventType EventType,
 	instrumentID string,

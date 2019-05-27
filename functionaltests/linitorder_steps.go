@@ -5,10 +5,12 @@ import (
 	"github.com/DATA-DOG/godog"
 	"github.com/DATA-DOG/godog/gherkin"
 	"github.com/rdumont/assistdog"
+	"orderbook/assert"
 	"orderbook/instrument"
 	"orderbook/orderbook"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -43,6 +45,8 @@ const (
 func anOrderBookForInstrument(inst string) error {
 	ins := instrument.MakeInstrument(inst, inst+"name")
 	bk = orderbook.MakeOrderBook(ins)
+	execs = []orderbook.ExecutionReport{}
+	orders = []orderbook.OrderEvent{}
 	return nil
 }
 
@@ -58,6 +62,7 @@ func usersSendOrdersWith(table *gherkin.DataTable) error {
 		case orderbook.EventTypeCancel:
 			order := makeCancelOrder(row)
 			exec, _ := bk.CancelOrder(order)
+			fmt.Printf("Cancel Exec [%v]\n", exec)
 			execs = append(execs, exec)
 			orders = append(orders, order)
 		}
@@ -66,13 +71,10 @@ func usersSendOrdersWith(table *gherkin.DataTable) error {
 }
 
 func awaitExecutions(num int) error {
-	if (bk.BuySize() + bk.SellSize()) == num {
-		return nil
-	}
 	if len(execs) == num {
 		return nil
 	}
-	return fmt.Errorf("did not get %d execs, got %d instead", num, (bk.BuySize() + bk.SellSize()))
+	return fmt.Errorf("did not get %d execs, got %d instead", num, len(execs))
 }
 
 func executionsShouldBe(table *gherkin.DataTable) error {
@@ -83,10 +85,12 @@ func executionsShouldBe(table *gherkin.DataTable) error {
 		expectedExecs = append(expectedExecs, exec)
 	}
 	for k, v := range expectedExecs {
-		fmt.Printf("Execs value[%s]\n", v)
+		fmt.Printf("Exp      Execs value[%s]\n", v)
+		fmt.Printf("Act k=%d Execs value[%s]\n", k, execs[k])
 		if err := compareExec(v, execs[k]); err != nil {
 			return err
 		}
+
 	}
 	return nil
 }
@@ -158,20 +162,26 @@ func compareExec(exp orderbook.ExecutionReport, act orderbook.ExecutionReport) e
 	if exp == nil {
 		return fmt.Errorf("exp nil")
 	}
-	if exp.InstrumentID() != act.InstrumentID() ||
-		exp.ClientID() != act.ClientID() ||
-		exp.ClOrdID() != act.ClOrdID() ||
-		exp.Side() != act.Side() ||
-		exp.LastQty() != act.LastQty() ||
-		exp.LastPrice() != act.LastPrice() ||
-		exp.ExecType() != act.ExecType() ||
-		exp.LeavesQty() != act.LeavesQty() ||
-		exp.CumQty() != act.CumQty() ||
-		exp.OrdStatus() != act.OrdStatus() ||
-		exp.OrderQty() != act.OrderQty() ||
-		!compareID(exp.OrderID(), act.OrderID()) ||
-		!compareID(exp.ExecID(), act.ExecID()) {
-		return fmt.Errorf("Expect %v \nActual %v ", exp, act)
+	var errors strings.Builder
+	assert.AssertEqualSB(exp.InstrumentID(), act.InstrumentID(), "InstrumentID", &errors)
+	assert.AssertEqualSB(exp.ClientID(), act.ClientID(), "ClientID", &errors)
+	assert.AssertEqualSB(exp.ClOrdID(), act.ClOrdID(), "ClOrdID", &errors)
+	assert.AssertEqualSB(exp.Side(), act.Side(), "Side", &errors)
+	assert.AssertEqualSB(exp.LastQty(), act.LastQty(), "LastQty", &errors)
+	assert.AssertEqualSB(exp.LastPrice(), act.LastPrice(), "LastPrice", &errors)
+	assert.AssertEqualSB(exp.ExecType(), act.ExecType(), "ExecType", &errors)
+	assert.AssertEqualSB(exp.LeavesQty(), act.LeavesQty(), "LeavesQty", &errors)
+	assert.AssertEqualSB(exp.CumQty(), act.CumQty(), "CumQty", &errors)
+	assert.AssertEqualSB(exp.OrdStatus(), act.OrdStatus(), "OrdStatus", &errors)
+	assert.AssertEqualSB(exp.OrderQty(), act.OrderQty(), "OrderQty", &errors)
+	if !compareID(exp.OrderID(), act.OrderID()) {
+		fmt.Fprintf(&errors, "%s", "orderid null")
+	}
+	if !compareID(exp.ExecID(), act.ExecID()) {
+		fmt.Fprintf(&errors, "%s", "execid null")
+	}
+	if errors.Len() > 0 {
+		return fmt.Errorf(errors.String())
 	}
 	return nil
 }

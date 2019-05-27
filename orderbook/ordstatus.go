@@ -29,7 +29,7 @@ func OrdStatusConv(thetype string) OrdStatus {
 		return OrdStatusPartiallyFilled
 	case "Filled":
 		return OrdStatusFilled
-	case "Canceled":
+	case "Cancelled":
 		return OrdStatusCanceled
 	case "Rejected":
 		return OrdStatusRejected
@@ -41,4 +41,26 @@ func OrdStatusConv(thetype string) OrdStatus {
 		return OrdStatusExpired
 	}
 	return OrdStatusUnknown
+}
+
+func OrdStatusToString(thetype OrdStatus) string {
+	switch thetype {
+	case OrdStatusNew:
+		return "New"
+	case OrdStatusPartiallyFilled:
+		return "PartiallyFilled"
+	case OrdStatusFilled:
+		return "Filled"
+	case OrdStatusCanceled:
+		return "Cancelled"
+	case OrdStatusRejected:
+		return "Rejected"
+	case OrdStatusReplaced:
+		return "Replaced"
+	case OrdStatusDoneForDay:
+		return "DoneForDay"
+	case OrdStatusExpired:
+		return "Expired"
+	}
+	return "OrdStatusUnknown"
 }

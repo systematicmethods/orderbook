@@ -36,7 +36,7 @@ func ExecTypeConv(thetype string) ExecType {
 		return ExecTypeTrade
 	case "Filled":
 		return ExecTypeTrade
-	case "Canceled":
+	case "Cancelled":
 		return ExecTypeCanceled
 	case "Rejected":
 		return ExecTypeRejected

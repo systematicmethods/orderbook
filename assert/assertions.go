@@ -3,6 +3,7 @@ package assert
 import (
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -19,6 +20,13 @@ func AssertEqual(a interface{}, b interface{}, msg string) error {
 		return fmt.Errorf("%s was '%v' != '%v'", msg, a, b)
 	}
 	return nil
+}
+
+func AssertEqualSB(a interface{}, b interface{}, msg string, errors *strings.Builder) {
+	if a != b {
+		fmt.Fprintf(errors, "%s was '%v' != '%v'", msg, a, b)
+	}
+
 }
 
 func AssertEqualTD(t *testing.T, a interface{}, b interface{}, msg string) {
