@@ -1,8 +1,12 @@
 image: golang:1.12.5
 
+variables:
+  major_minor_patch: 0.0.${CI_PIPELINE_IID}
+
 stages:
   - test
   - build
+  - changelog
 
 test:
   stage: test
@@ -14,8 +18,11 @@ test:
     - go test -v ./...
 #    - go fmt $(go list ./... )
   except:
+    - tags
+  except:
     changes:
       - README.md
+      - CHANGELOG.md
       - doc/*
 
 compile:
@@ -24,10 +31,23 @@ compile:
     - docker
   script:
     - go build -race -ldflags "-extldflags '-static'" ./...
-  except:
-    changes:
-      - README.md
-      - doc/*
+    - git tag -a ${major_minor_patch} -m "version ${major_minor_patch}"
+#  except:
+#    - tags
+#  except:
+#    changes:
+#      - README.md
+#      - doc/*
 #  artifacts:
 #    paths:
 #    - $CI_PROJECT_DIR/cmd/helloworld
+
+changlog:
+  image: node:8
+  stage: changelog
+  script:
+    - sudo npm install -g conventional-changelog
+    - standard-changelog -i CHANGELOG.md -s
+    - git add CHANGELOG.md
+    - git commit -m "Add CHANGELOG.md"
+    - git push origin master
