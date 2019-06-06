@@ -49,6 +49,7 @@ changlog:
   stage: changelog
   script:
     - npm install -g conventional-changelog
+    - npm install -g standard-changelog
     - standard-changelog -i CHANGELOG.md -s
     - cat CHANGELOG.md
 #    - git add CHANGELOG.md
