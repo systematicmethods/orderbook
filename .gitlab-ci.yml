@@ -31,7 +31,9 @@ compile:
     - docker
   script:
     - go build -race -ldflags "-extldflags '-static'" ./...
-    - git tag -a ${major_minor_patch} -m "version ${major_minor_patch}"
+#    - git remote set-url new-origin https://"username:passwd"@gitlab.com/accountname/projectname
+#    - git tag -a ${major_minor_patch} -m "version ${major_minor_patch}"
+#    - git push origin ${major_minor_patch}
 #  except:
 #    - tags
 #  except:
@@ -48,6 +50,6 @@ changlog:
   script:
     - sudo npm install -g conventional-changelog
     - standard-changelog -i CHANGELOG.md -s
-    - git add CHANGELOG.md
-    - git commit -m "Add CHANGELOG.md"
-    - git push origin master
+#    - git add CHANGELOG.md
+#    - git commit -m "Add CHANGELOG.md"
+#    - git push origin master
