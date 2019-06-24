@@ -8,7 +8,7 @@ import (
 
 type OrderBook interface {
 	Instrument() *instrument.Instrument
-	NewOrder(order NewOrderSingle) (ExecutionReport, error)
+	NewOrder(order NewOrderSingle) ([]ExecutionReport, error)
 	CancelOrder(order OrderCancelRequest) (ExecutionReport, error)
 	BuySize() int
 	SellSize() int
@@ -29,15 +29,23 @@ type orderbook struct {
 	sellOrders OrderList
 }
 
-func (b *orderbook) NewOrder(order NewOrderSingle) (ExecutionReport, error) {
+func (b *orderbook) NewOrder(order NewOrderSingle) ([]ExecutionReport, error) {
 	if order.OrderID() != "" {
+		execs := []ExecutionReport{}
 		order := NewOrder(order, newID(uuid.NewUUID()), time.Now())
 		if order.Side() == SideBuy {
 			b.buyOrders.Add(order)
 		} else {
 			b.sellOrders.Add(order)
 		}
-		return MakeNewOrderAckExecutionReport(order), nil
+		execs = append(execs, MakeNewOrderAckExecutionReport(order))
+		//if order.Side() == SideBuy {
+		//	b.buyOrders.Add(order)
+		//} else {
+		//	b.sellOrders.Add(order)
+		//}
+
+		return execs, nil
 	}
 	return nil, nil
 }

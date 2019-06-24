@@ -32,9 +32,7 @@ func ExecTypeConv(thetype string) ExecType {
 	switch thetype {
 	case "New":
 		return ExecTypeNew
-	case "PartiallyFilled":
-		return ExecTypeTrade
-	case "Filled":
+	case "Trade":
 		return ExecTypeTrade
 	case "Cancelled":
 		return ExecTypeCanceled

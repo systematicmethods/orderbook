@@ -34,6 +34,7 @@ const (
 	tabExpireOn           = "ExpireOn"
 	tabTimeInForce        = "TimeInForce"
 	tabStatus             = "Status"
+	tabExecType           = "ExecType"
 	tabReason             = "Reason"
 	tabExecID             = "ExecID"
 	tabOrderID            = "OrderID"
@@ -57,12 +58,12 @@ func usersSendOrdersWith(table *gherkin.DataTable) error {
 		case orderbook.EventTypeNewOrderSingle:
 			order := makeOrder(row)
 			exec, _ := bk.NewOrder(order)
-			execs = append(execs, exec)
+			execs = append(execs, exec...)
 			orders = append(orders, order)
 		case orderbook.EventTypeCancel:
 			order := makeCancelOrder(row)
 			exec, _ := bk.CancelOrder(order)
-			fmt.Printf("Cancel Exec [%v]\n", exec)
+			//fmt.Printf("Cancel Exec [%v]\n", exec)
 			execs = append(execs, exec)
 			orders = append(orders, order)
 		}
@@ -85,8 +86,8 @@ func executionsShouldBe(table *gherkin.DataTable) error {
 		expectedExecs = append(expectedExecs, exec)
 	}
 	for k, v := range expectedExecs {
-		fmt.Printf("Exp      Execs value[%s]\n", v)
-		fmt.Printf("Act k=%d Execs value[%s]\n", k, execs[k])
+		//fmt.Printf("Exp      Execs value[%s]\n", v)
+		//fmt.Printf("Act k=%d Execs value[%s]\n", k, execs[k])
 		if err := compareExec(v, execs[k]); err != nil {
 			return err
 		}
@@ -106,16 +107,19 @@ func makeOrder(row map[string]string) orderbook.NewOrderSingle {
 	price, _ := strconv.ParseFloat(row[tabPrice], 64)
 	qty, _ := strconv.ParseInt(row[tabQty], 64, 64)
 	dt := time.Date(2019, 10, 11, 11, 11, 1, 0, loc)
-	return orderbook.MakeNewOrderLimit(
-		row[tabInstrument],
-		row[tabClientID],
-		row[tabClOrdID],
-		orderbook.SideConv(row[tabSide]),
-		price,
-		qty,
-		orderbook.TimeInForceConv(row[tabTimeInForce]),
-		dt,
-		dt)
+	if row[tabOrdType] == "Limit" {
+		return orderbook.MakeNewOrderLimit(
+			row[tabInstrument],
+			row[tabClientID],
+			row[tabClOrdID],
+			orderbook.SideConv(row[tabSide]),
+			price,
+			qty,
+			orderbook.TimeInForceConv(row[tabTimeInForce]),
+			dt,
+			dt)
+	}
+	return nil
 
 }
 
@@ -145,7 +149,7 @@ func makeExec(row map[string]string) orderbook.ExecutionReport {
 		orderbook.SideConv(row[tabSide]),
 		lastqty,
 		lastprice,
-		orderbook.ExecTypeConv(row[tabStatus]),
+		orderbook.ExecTypeConv(row[tabExecType]),
 		leavesQty,
 		cumqty,
 		orderbook.OrdStatusConv(row[tabStatus]),
