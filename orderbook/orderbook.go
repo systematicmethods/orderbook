@@ -1,6 +1,7 @@
 package orderbook
 
 import (
+	"fmt"
 	"github.com/google/uuid"
 	"orderbook/instrument"
 	"time"
@@ -14,6 +15,8 @@ type OrderBook interface {
 	SellSize() int
 	BuyOrders() []OrderState
 	SellOrders() []OrderState
+
+	matchOrder() []ExecutionReport
 }
 
 func MakeOrderBook(instrument instrument.Instrument) OrderBook {
@@ -33,21 +36,39 @@ func (b *orderbook) NewOrder(order NewOrderSingle) ([]ExecutionReport, error) {
 	if order.OrderID() != "" {
 		execs := []ExecutionReport{}
 		order := NewOrder(order, newID(uuid.NewUUID()), time.Now())
+		execs = append(execs, MakeNewOrderAckExecutionReport(order))
+		fmt.Printf("NewOrder execs in OrderBook %v", execs)
 		if order.Side() == SideBuy {
 			b.buyOrders.Add(order)
 		} else {
 			b.sellOrders.Add(order)
 		}
-		execs = append(execs, MakeNewOrderAckExecutionReport(order))
-		//if order.Side() == SideBuy {
-		//	b.buyOrders.Add(order)
-		//} else {
-		//	b.sellOrders.Add(order)
-		//}
-
+		execs = append(execs, b.matchOrder()...)
+		fmt.Printf("NewOrder execs after in OrderBook %v", execs)
 		return execs, nil
 	}
 	return nil, nil
+}
+
+func (b *orderbook) matchOrder() []ExecutionReport {
+	fmt.Printf("match order: sell %d buy %d \n", b.sellOrders.Size(), b.buyOrders.Size())
+	matchexecs := []ExecutionReport{}
+	for buyiter := b.buyOrders.iterator(); buyiter.Next() == true; {
+		buyorder := buyiter.Value().(OrderState)
+		if buyorder.Side() == SideBuy && b.sellOrders.Size() > 0 {
+			fmt.Printf("buy order %s %f %d\n", SideToString(buyorder.Side()), buyorder.Price(), buyorder.LeavesQty())
+			for selliter := b.sellOrders.iterator(); selliter.Next() == true; {
+				sellorder := selliter.Value().(OrderState)
+				fmt.Printf("buy \nsellorder %v \nbuyorder %v\n", sellorder, buyorder)
+				if buyorder.Price() >= sellorder.Price() {
+					toFill := min(sellorder.LeavesQty(), buyorder.LeavesQty())
+					matchexecs = append(matchexecs, MakeFillExecutionReport(buyorder, sellorder.Price(), toFill))
+					matchexecs = append(matchexecs, MakeFillExecutionReport(sellorder, sellorder.Price(), toFill))
+				}
+			}
+		}
+	}
+	return matchexecs
 }
 
 func (b *orderbook) CancelOrder(order OrderCancelRequest) (ExecutionReport, error) {
@@ -90,4 +111,11 @@ func (b *orderbook) SellOrders() []OrderState {
 
 func newID(uuid uuid.UUID, _ error) uuid.UUID {
 	return uuid
+}
+
+func min(x int64, y int64) int64 {
+	if x < y {
+		return x
+	}
+	return y
 }

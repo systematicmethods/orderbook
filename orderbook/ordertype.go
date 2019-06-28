@@ -20,3 +20,15 @@ func OrderTypeConv(ordertype string) OrderType {
 	}
 	return OrderTypeUnknown
 }
+
+func OrderTypeToString(ordertype OrderType) string {
+	switch ordertype {
+	case OrderTypeLimit:
+		return "Limit"
+	case OrderTypeMarket:
+		return "Market"
+	case OrderTypeStop:
+		return "Stop"
+	}
+	return "Unknown"
+}

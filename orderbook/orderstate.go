@@ -1,6 +1,7 @@
 package orderbook
 
 import (
+	"fmt"
 	"github.com/google/uuid"
 	"orderbook/uuidext"
 	"time"
@@ -78,6 +79,29 @@ type orderState struct {
 	cumQty    int64
 	ordStatus OrdStatus
 	data      string
+}
+
+func (b *orderState) String() string {
+	str1 := fmt.Sprintf("OrderState: instrumentID:%s, clientID:%s, clOrdID:%s, side:%v, pricee:%f, orderQty:%d, orderType:%v, timeInForce:%v, expireOn:%v, transactTime:%v, ",
+		b.instrumentID,
+		b.clientID,
+		b.clOrdID,
+		SideToString(b.side),
+		b.price,
+		b.orderQty,
+		OrderTypeToString(b.orderType),
+		b.timeInForce,
+		b.expireOn,
+		b.transactTime)
+	str2 := fmt.Sprintf("createdOn:%v, updatedOn:%v, orderID:%s, timestamp:%v, leavesQty:%d, cumQty:%d, ordStatus:%v",
+		b.createdOn,
+		b.updatedOn,
+		b.orderID,
+		b.timestamp,
+		b.leavesQty,
+		b.cumQty,
+		OrdStatusToString(b.ordStatus))
+	return fmt.Sprintf("%s %s", str1, str2)
 }
 
 func (p *orderState) InstrumentID() string {

@@ -47,3 +47,23 @@ func ExecTypeConv(thetype string) ExecType {
 	}
 	return ExecTypeUnknown
 }
+
+func ExecTypeToString(thetype ExecType) string {
+	switch thetype {
+	case ExecTypeNew:
+		return "New"
+	case ExecTypeTrade:
+		return "Trade"
+	case ExecTypeCanceled:
+		return "Cancelled"
+	case ExecTypeRejected:
+		return "Rejected"
+	case ExecTypeReplaced:
+		return "Replaced"
+	case ExecTypeDoneForDay:
+		return "DoneForDay"
+	case ExecTypeExpired:
+		return "Expired"
+	}
+	return "Unknown"
+}

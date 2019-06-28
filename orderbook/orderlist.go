@@ -21,6 +21,8 @@ type OrderList interface {
 	FindByPrice(price float64) []OrderState
 	Orders() []OrderState
 	Size() int
+
+	iterator() treeset.Iterator
 }
 
 type orderlist struct {
@@ -104,6 +106,10 @@ func (p *orderlist) FindByPrice(price float64) []OrderState {
 		}
 	}
 	return orders
+}
+
+func (p *orderlist) iterator() treeset.Iterator {
+	return p.orderedlist.Iterator()
 }
 
 const epsilon float64 = 0.00000001

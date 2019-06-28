@@ -19,3 +19,13 @@ func SideConv(side string) Side {
 	}
 	return SideUnknown
 }
+
+func SideToString(side Side) string {
+	switch side {
+	case SideBuy:
+		return "buy"
+	case SideSell:
+		return "sell"
+	}
+	return "Unknown"
+}

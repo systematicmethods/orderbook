@@ -57,14 +57,14 @@ func usersSendOrdersWith(table *gherkin.DataTable) error {
 		switch orderbook.EventTypeConv(row[tabEvent]) {
 		case orderbook.EventTypeNewOrderSingle:
 			order := makeOrder(row)
-			exec, _ := bk.NewOrder(order)
-			execs = append(execs, exec...)
+			executions, _ := bk.NewOrder(order)
+			execs = append(execs, executions...)
 			orders = append(orders, order)
 		case orderbook.EventTypeCancel:
 			order := makeCancelOrder(row)
-			exec, _ := bk.CancelOrder(order)
+			executions, _ := bk.CancelOrder(order)
 			//fmt.Printf("Cancel Exec [%v]\n", exec)
-			execs = append(execs, exec)
+			execs = append(execs, executions)
 			orders = append(orders, order)
 		}
 	}
@@ -75,7 +75,10 @@ func awaitExecutions(num int) error {
 	if len(execs) == num {
 		return nil
 	}
-	return fmt.Errorf("did not get %d execs, got %d instead", num, len(execs))
+	for exec := range execs {
+		fmt.Printf("awaitExecutions %v\n", execs[exec])
+	}
+	return fmt.Errorf("did not get %d execs, got %d", num, len(execs))
 }
 
 func executionsShouldBe(table *gherkin.DataTable) error {

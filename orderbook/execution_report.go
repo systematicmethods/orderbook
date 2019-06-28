@@ -1,6 +1,7 @@
 package orderbook
 
 import (
+	"fmt"
 	"github.com/google/uuid"
 	"time"
 )
@@ -47,6 +48,26 @@ type executionReport struct {
 	eventType EventType
 }
 
+func (b *executionReport) String() string {
+	str1 := fmt.Sprintf("ExecutionReport: instrumentID:%s, clientID:%s, clOrdID:%s, side:%v, lastQty:%d, lastPrice:%f, execType:%v, leavesQty:%d, cumQty:%d, ordStatus;%v",
+		b.instrumentID,
+		b.clientID,
+		b.clOrdID,
+		SideToString(b.side),
+		b.lastQty,
+		b.lastPrice,
+		ExecTypeToString(b.execType),
+		b.leavesQty,
+		b.cumQty,
+		OrdStatusToString(b.ordStatus))
+	str2 := fmt.Sprintf("orderID:%s, execID:%s, orderQty:%d, transactTime:%s",
+		b.orderID,
+		b.execID,
+		b.orderQty,
+		b.transactTime)
+	return fmt.Sprintf("%s %s", str1, str2)
+}
+
 func MakeNewOrderAckExecutionReport(ord OrderState) ExecutionReport {
 	theExecID, _ := uuid.NewUUID()
 	return ExecutionReport(&executionReport{
@@ -65,6 +86,27 @@ func MakeNewOrderAckExecutionReport(ord OrderState) ExecutionReport {
 		ord.OrderQty(),
 		ord.TransactTime(),
 		EventTypeNewOrderAck,
+	})
+}
+
+func MakeFillExecutionReport(ord OrderState, fillPrice float64, qty int64) ExecutionReport {
+	theExecID, _ := uuid.NewUUID()
+	return ExecutionReport(&executionReport{
+		ord.InstrumentID(),
+		ord.ClientID(),
+		ord.ClOrdID(),
+		ord.Side(),
+		qty,
+		fillPrice,
+		ExecTypeTrade,
+		ord.LeavesQty(),
+		ord.CumQty(),
+		OrdStatusFilled,
+		ord.OrderID(),
+		theExecID.String(),
+		ord.OrderQty(),
+		ord.TransactTime(),
+		EventTypeFill,
 	})
 }
 
