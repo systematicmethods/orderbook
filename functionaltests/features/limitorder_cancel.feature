@@ -16,3 +16,5 @@ Feature: Limit Order Cancel
       | NewOrderAck  | Bill_01   | ABV        | Sell | Limit   | Bill_01o | 1.05  | 2000 |          | GoodTillCancel | 0       |           | 0      | New       | New       |        | Not Null | Not Null |
       | Cancelled    | John_01   | ABV        | Buy  | Limit   | John_02o | 1.03  | 1000 |          | GoodTillCancel | 0       |           | 0      | Cancelled | Cancelled |        | Not Null | Not Null |
       | Cancelled    | Bill_01   | ABV        | Sell | Limit   | Bill_02o | 1.05  | 2000 |          | GoodTillCancel | 0       |           | 0      | Cancelled | Cancelled |        | Not Null | Not Null |
+    And order state should be:
+      | Event        | ClientID  | Instrument | Side | OrdType | ClOrdID  | Price | Qty  | ExpireOn | TimeInForce    | LastQty | LastPrice | CumQty | Status    | ExecType  | Reason | ExecID   | OrderID  | LeavesQty | TransactTime | CreatedOn | UpdatedOn | Timestamp |

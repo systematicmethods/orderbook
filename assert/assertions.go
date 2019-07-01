@@ -22,11 +22,10 @@ func AssertEqual(a interface{}, b interface{}, msg string) error {
 	return nil
 }
 
-func AssertEqualSB(a interface{}, b interface{}, msg string, errors *strings.Builder) {
-	if a != b {
-		fmt.Fprintf(errors, "%s was '%v' != '%v'", msg, a, b)
+func AssertEqualSB(ex interface{}, ac interface{}, msg string, errors *strings.Builder) {
+	if ex != ac {
+		fmt.Fprintf(errors, "%s expected '%v' actual '%v'", msg, ex, ac)
 	}
-
 }
 
 func AssertEqualTD(t *testing.T, a interface{}, b interface{}, msg string) {

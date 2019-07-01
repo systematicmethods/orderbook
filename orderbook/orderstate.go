@@ -27,6 +27,8 @@ type OrderState interface {
 	LeavesQty() int64
 	CumQty() int64
 	OrdStatus() OrdStatus
+
+	fill(qty int64) bool
 }
 
 func newOrderForTesting(clOrdID string, orderID string, price float64, timestamp uuid.UUID, data string) OrderState {
@@ -52,6 +54,47 @@ func NewOrder(ord NewOrderSingle, timestamp uuid.UUID, createdOn time.Time) Orde
 		ord.OrderQty(),
 		0,
 		OrdStatusNew,
+		"",
+	}
+}
+
+func MakeOrderState(
+	instrumentID string,
+	clientID string,
+	clOrdID string,
+	side Side,
+	price float64,
+	orderQty int64,
+	orderType OrderType,
+	timeInForce TimeInForce,
+	expireOn time.Time,
+	transactTime time.Time,
+	createdOn time.Time,
+	updatedOn time.Time,
+	orderID string,
+	timestamp uuid.UUID,
+	leavesQty int64,
+	cumQty int64,
+	ordStatus OrdStatus,
+) OrderState {
+	return &orderState{
+		instrumentID,
+		clientID,
+		clOrdID,
+		side,
+		price,
+		orderQty,
+		orderType,
+		timeInForce,
+		expireOn,
+		transactTime,
+		createdOn,
+		updatedOn,
+		orderID,
+		timestamp,
+		leavesQty,
+		cumQty,
+		ordStatus,
 		"",
 	}
 }
@@ -170,6 +213,19 @@ func (p *orderState) CumQty() int64 {
 
 func (p *orderState) OrdStatus() OrdStatus {
 	return p.ordStatus
+}
+
+func (o *orderState) fill(qty int64) bool {
+	//fmt.Printf("Fill orderState %v qty %d\n", o, qty)
+	o.cumQty = o.cumQty + qty
+	o.leavesQty = o.leavesQty - qty
+	if o.leavesQty <= 0 {
+		o.ordStatus = OrdStatusFilled
+		return true
+	} else {
+		o.ordStatus = OrdStatusPartiallyFilled
+	}
+	return false
 }
 
 func sellPriceComparator(a, b interface{}) int {

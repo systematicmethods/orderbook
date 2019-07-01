@@ -91,6 +91,12 @@ func MakeNewOrderAckExecutionReport(ord OrderState) ExecutionReport {
 
 func MakeFillExecutionReport(ord OrderState, fillPrice float64, qty int64) ExecutionReport {
 	theExecID, _ := uuid.NewUUID()
+	var etype EventType
+	if ord.OrdStatus() == OrdStatusFilled {
+		etype = EventTypeFill
+	} else {
+		etype = EventTypePartialFill
+	}
 	return ExecutionReport(&executionReport{
 		ord.InstrumentID(),
 		ord.ClientID(),
@@ -101,12 +107,12 @@ func MakeFillExecutionReport(ord OrderState, fillPrice float64, qty int64) Execu
 		ExecTypeTrade,
 		ord.LeavesQty(),
 		ord.CumQty(),
-		OrdStatusFilled,
+		ord.OrdStatus(),
 		ord.OrderID(),
 		theExecID.String(),
 		ord.OrderQty(),
 		ord.TransactTime(),
-		EventTypeFill,
+		etype,
 	})
 }
 

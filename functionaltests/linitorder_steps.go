@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/DATA-DOG/godog"
 	"github.com/DATA-DOG/godog/gherkin"
+	"github.com/google/uuid"
 	"github.com/rdumont/assistdog"
 	"orderbook/assert"
 	"orderbook/instrument"
@@ -22,26 +23,39 @@ var orders []orderbook.OrderEvent
 var loc, _ = time.LoadLocation("UTC")
 
 const (
-	tabEvent       string = "Event"
-	tabClientID           = "ClientID"
-	tabInstrument         = "Instrument"
-	tabSide               = "Side"
-	tabOrdType            = "OrdType"
-	tabClOrdID            = "ClOrdID"
-	tabOrigClOrdID        = "OrigClOrdID"
-	tabPrice              = "Price"
-	tabQty                = "Qty"
-	tabExpireOn           = "ExpireOn"
-	tabTimeInForce        = "TimeInForce"
-	tabStatus             = "Status"
-	tabExecType           = "ExecType"
-	tabReason             = "Reason"
-	tabExecID             = "ExecID"
-	tabOrderID            = "OrderID"
-	tabLastQty            = "LastQty"
-	tabLastPrice          = "LastPrice"
-	tabCumQty             = "CumQty"
+	tabEvent        string = "Event"
+	tabClientID            = "ClientID"
+	tabInstrument          = "Instrument"
+	tabSide                = "Side"
+	tabOrdType             = "OrdType"
+	tabClOrdID             = "ClOrdID"
+	tabOrigClOrdID         = "OrigClOrdID"
+	tabPrice               = "Price"
+	tabQty                 = "Qty"
+	tabLeavesQty           = "LeavesQty"
+	tabExpireOn            = "ExpireOn"
+	tabTimeInForce         = "TimeInForce"
+	tabStatus              = "Status"
+	tabExecType            = "ExecType"
+	tabReason              = "Reason"
+	tabExecID              = "ExecID"
+	tabOrderID             = "OrderID"
+	tabLastQty             = "LastQty"
+	tabLastPrice           = "LastPrice"
+	tabCumQty              = "CumQty"
+	tabTransactTime        = "TransactTime"
+	tabCreatedOn           = "CreatedOn"
+	tabUpdatedOn           = "UpdatedOn"
+	tabTimestamp           = "Timestamp"
 )
+
+func FeatureContextLimitOrder(s *godog.Suite) {
+	s.Step(`^An order book for instrument "([^"]*)"$`, anOrderBookForInstrument)
+	s.Step(`^users send orders with:$`, usersSendOrdersWith)
+	s.Step(`^await (\d+) executions$`, awaitExecutions)
+	s.Step(`^executions should be:$`, executionsShouldBe)
+	s.Step(`^order state should be:$`, orderStateShouldBe)
+}
 
 func anOrderBookForInstrument(inst string) error {
 	ins := instrument.MakeInstrument(inst, inst+"name")
@@ -99,16 +113,46 @@ func executionsShouldBe(table *gherkin.DataTable) error {
 	return nil
 }
 
-func FeatureContextLimitOrder(s *godog.Suite) {
-	s.Step(`^An order book for instrument "([^"]*)"$`, anOrderBookForInstrument)
-	s.Step(`^users send orders with:$`, usersSendOrdersWith)
-	s.Step(`^await (\d+) executions$`, awaitExecutions)
-	s.Step(`^executions should be:$`, executionsShouldBe)
+func orderStateShouldBe(table *gherkin.DataTable) error {
+	slice, _ := assit.ParseSlice(table)
+	var expectedBuyState []orderbook.OrderState
+	var expectedSellState []orderbook.OrderState
+	for _, row := range slice {
+		order := makeState(row)
+		if order.Side() == orderbook.SideBuy {
+			expectedBuyState = append(expectedBuyState, order)
+		} else {
+			expectedSellState = append(expectedSellState, order)
+		}
+	}
+
+	var errors strings.Builder
+	buyOrders := bk.BuyOrders()
+	assert.AssertEqualSB(len(expectedBuyState), len(buyOrders), "buy order state len different", &errors)
+	sellOrders := bk.SellOrders()
+	assert.AssertEqualSB(len(expectedSellState), len(sellOrders), "sell order state len different", &errors)
+	if errors.Len() > 0 {
+		return fmt.Errorf(errors.String())
+	}
+
+	for k, v := range expectedBuyState {
+		if err := compareState(v, buyOrders[k]); err != nil {
+			return err
+		}
+	}
+
+	for k, v := range expectedSellState {
+		if err := compareState(v, sellOrders[k]); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func makeOrder(row map[string]string) orderbook.NewOrderSingle {
 	price, _ := strconv.ParseFloat(row[tabPrice], 64)
-	qty, _ := strconv.ParseInt(row[tabQty], 64, 64)
+	qty, _ := strconv.ParseInt(row[tabQty], 10, 64)
+	//fmt.Printf("\n qty in test %d %f row %v\n", qty, price, row)
 	dt := time.Date(2019, 10, 11, 11, 11, 1, 0, loc)
 	if row[tabOrdType] == "Limit" {
 		return orderbook.MakeNewOrderLimit(
@@ -139,9 +183,9 @@ func makeCancelOrder(row map[string]string) orderbook.OrderCancelRequest {
 
 func makeExec(row map[string]string) orderbook.ExecutionReport {
 	dt := time.Date(2019, 10, 11, 11, 11, 1, 0, loc)
-	qty, _ := strconv.ParseInt(row[tabQty], 64, 64)
-	lastqty, _ := strconv.ParseInt(row[tabLastQty], 64, 64)
-	cumqty, _ := strconv.ParseInt(row[tabCumQty], 64, 64)
+	qty, _ := strconv.ParseInt(row[tabQty], 10, 64)
+	lastqty, _ := strconv.ParseInt(row[tabLastQty], 10, 64)
+	cumqty, _ := strconv.ParseInt(row[tabCumQty], 10, 64)
 	lastprice, _ := strconv.ParseFloat(row[tabLastPrice], 64)
 	leavesQty := qty - cumqty
 	return orderbook.MakeExecutionReport(
@@ -162,6 +206,61 @@ func makeExec(row map[string]string) orderbook.ExecutionReport {
 		dt)
 }
 
+func makeState(row map[string]string) orderbook.OrderState {
+	dt := time.Date(2019, 10, 11, 11, 11, 1, 0, loc)
+	qty, _ := strconv.ParseInt(row[tabQty], 10, 64)
+	cumqty, _ := strconv.ParseInt(row[tabCumQty], 10, 64)
+	price, _ := strconv.ParseFloat(row[tabPrice], 64)
+	leavesQty := qty - cumqty
+	return orderbook.MakeOrderState(
+		row[tabInstrument],
+		row[tabClientID],
+		row[tabClOrdID],
+		orderbook.SideConv(row[tabSide]),
+		price,
+		qty,
+		orderbook.OrderTypeConv(row[tabOrdType]),
+		orderbook.TimeInForceConv(row[tabTimeInForce]),
+		dt,
+		dt,
+		dt,
+		dt,
+		row[tabOrderID],
+		uuid.New(),
+		leavesQty,
+		cumqty,
+		orderbook.OrdStatusConv(row[tabStatus]),
+	)
+}
+
+func compareState(exp orderbook.OrderState, act orderbook.OrderState) error {
+	if act == nil {
+		return fmt.Errorf("act nil")
+	}
+	if exp == nil {
+		return fmt.Errorf("exp nil")
+	}
+	var errors strings.Builder
+	assert.AssertEqualSB(exp.InstrumentID(), act.InstrumentID(), "InstrumentID", &errors)
+	assert.AssertEqualSB(exp.ClientID(), act.ClientID(), "ClientID", &errors)
+	assert.AssertEqualSB(exp.ClOrdID(), act.ClOrdID(), "ClOrdID", &errors)
+	assert.AssertEqualSB(exp.Side(), act.Side(), "Side", &errors)
+	assert.AssertEqualSB(exp.Price(), act.Price(), "Price", &errors)
+	assert.AssertEqualSB(exp.LeavesQty(), act.LeavesQty(), "LeavesQty", &errors)
+	assert.AssertEqualSB(exp.CumQty(), act.CumQty(), "CumQty", &errors)
+	assert.AssertEqualSB(orderbook.OrdStatusToString(exp.OrdStatus()), orderbook.OrdStatusToString(act.OrdStatus()), "OrdStatus", &errors)
+	assert.AssertEqualSB(exp.OrderQty(), act.OrderQty(), "OrderQty", &errors)
+	if !compareID(exp.OrderID(), act.OrderID()) {
+		fmt.Fprintf(&errors, "%s", "orderid null")
+	}
+	if !compareID(exp.OrderID(), act.OrderID()) {
+		fmt.Fprintf(&errors, "%s", "OrderID null")
+	}
+	if errors.Len() > 0 {
+		return fmt.Errorf(errors.String())
+	}
+	return nil
+}
 func compareExec(exp orderbook.ExecutionReport, act orderbook.ExecutionReport) error {
 	if act == nil {
 		return fmt.Errorf("act nil")
@@ -179,7 +278,7 @@ func compareExec(exp orderbook.ExecutionReport, act orderbook.ExecutionReport) e
 	assert.AssertEqualSB(exp.ExecType(), act.ExecType(), "ExecType", &errors)
 	assert.AssertEqualSB(exp.LeavesQty(), act.LeavesQty(), "LeavesQty", &errors)
 	assert.AssertEqualSB(exp.CumQty(), act.CumQty(), "CumQty", &errors)
-	assert.AssertEqualSB(exp.OrdStatus(), act.OrdStatus(), "OrdStatus", &errors)
+	assert.AssertEqualSB(orderbook.OrdStatusToString(exp.OrdStatus()), orderbook.OrdStatusToString(act.OrdStatus()), "OrdStatus", &errors)
 	assert.AssertEqualSB(exp.OrderQty(), act.OrderQty(), "OrderQty", &errors)
 	if !compareID(exp.OrderID(), act.OrderID()) {
 		fmt.Fprintf(&errors, "%s", "orderid null")
