@@ -19,6 +19,7 @@ type ExecutionReport interface {
 	LeavesQty() int64
 	CumQty() int64
 	OrdStatus() OrdStatus
+	OrigClOrdID() string
 
 	OrderID() string
 	ExecID() string
@@ -36,9 +37,10 @@ type executionReport struct {
 	lastPrice float64
 	execType  ExecType
 
-	leavesQty int64
-	cumQty    int64
-	ordStatus OrdStatus
+	leavesQty   int64
+	cumQty      int64
+	ordStatus   OrdStatus
+	origClOrdID string
 
 	orderID      string
 	execID       string
@@ -81,6 +83,7 @@ func MakeNewOrderAckExecutionReport(ord OrderState) ExecutionReport {
 		ord.LeavesQty(),
 		ord.CumQty(),
 		OrdStatusNew,
+		"",
 		ord.OrderID(),
 		theExecID.String(),
 		ord.OrderQty(),
@@ -108,6 +111,7 @@ func MakeFillExecutionReport(ord OrderState, fillPrice float64, qty int64) Execu
 		ord.LeavesQty(),
 		ord.CumQty(),
 		ord.OrdStatus(),
+		"",
 		ord.OrderID(),
 		theExecID.String(),
 		ord.OrderQty(),
@@ -129,6 +133,7 @@ func MakeCancelOrderExecutionReport(ord OrderState, order OrderCancelRequest) Ex
 		ord.LeavesQty(),
 		ord.CumQty(),
 		OrdStatusCanceled,
+		order.OrigClOrdID(),
 		ord.OrderID(),
 		theExecID.String(),
 		ord.OrderQty(),
@@ -148,6 +153,7 @@ func MakeExecutionReport(
 	leavesQty int64,
 	cumQty int64,
 	ordStatus OrdStatus,
+	origClOrdID string,
 	orderID string,
 	execID string,
 	orderQty int64,
@@ -164,6 +170,7 @@ func MakeExecutionReport(
 		leavesQty,
 		cumQty,
 		ordStatus,
+		origClOrdID,
 		orderID,
 		execID,
 		orderQty,
@@ -210,6 +217,10 @@ func (e *executionReport) CumQty() int64 {
 
 func (e *executionReport) OrdStatus() OrdStatus {
 	return e.ordStatus
+}
+
+func (e *executionReport) OrigClOrdID() string {
+	return e.origClOrdID
 }
 
 func (e *executionReport) OrderID() string {

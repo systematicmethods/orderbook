@@ -200,6 +200,7 @@ func makeExec(row map[string]string) orderbook.ExecutionReport {
 		leavesQty,
 		cumqty,
 		orderbook.OrdStatusConv(row[tabStatus]),
+		row[tabOrigClOrdID],
 		row[tabOrderID],
 		row[tabExecID],
 		qty,
@@ -279,6 +280,7 @@ func compareExec(exp orderbook.ExecutionReport, act orderbook.ExecutionReport) e
 	assert.AssertEqualSB(exp.LeavesQty(), act.LeavesQty(), "LeavesQty", &errors)
 	assert.AssertEqualSB(exp.CumQty(), act.CumQty(), "CumQty", &errors)
 	assert.AssertEqualSB(orderbook.OrdStatusToString(exp.OrdStatus()), orderbook.OrdStatusToString(act.OrdStatus()), "OrdStatus", &errors)
+	assert.AssertEqualSB(exp.OrigClOrdID(), act.OrigClOrdID(), "OrigClOrdID", &errors)
 	assert.AssertEqualSB(exp.OrderQty(), act.OrderQty(), "OrderQty", &errors)
 	if !compareID(exp.OrderID(), act.OrderID()) {
 		fmt.Fprintf(&errors, "%s", "orderid null")
