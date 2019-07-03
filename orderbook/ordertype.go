@@ -4,9 +4,9 @@ type OrderType rune
 
 const (
 	OrderTypeMarket  OrderType = '1'
-	OrderTypeLimit             = '2'
-	OrderTypeStop              = '3'
-	OrderTypeUnknown           = 'U'
+	OrderTypeLimit   OrderType = '2'
+	OrderTypeStop    OrderType = '3'
+	OrderTypeUnknown OrderType = 'U'
 )
 
 func OrderTypeConv(ordertype string) OrderType {

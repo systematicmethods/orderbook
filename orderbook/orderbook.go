@@ -15,7 +15,11 @@ type OrderBook interface {
 	BuyOrders() []OrderState
 	SellOrders() []OrderState
 
+	NewAuctionOrder(order NewOrderSingle) ([]ExecutionReport, error)
+	Auction() ([]ExecutionReport, error)
+
 	matchOrder() []ExecutionReport
+	addNewOrder(order NewOrderSingle) ([]ExecutionReport, error)
 }
 
 func MakeOrderBook(instrument instrument.Instrument) OrderBook {
@@ -32,6 +36,20 @@ type orderbook struct {
 }
 
 func (b *orderbook) NewOrder(order NewOrderSingle) ([]ExecutionReport, error) {
+	execs, _ := b.addNewOrder(order)
+	execs = append(execs, b.matchOrder()...)
+	return execs, nil
+}
+
+func (b *orderbook) NewAuctionOrder(order NewOrderSingle) ([]ExecutionReport, error) {
+	return b.addNewOrder(order)
+}
+
+func (b *orderbook) Auction() ([]ExecutionReport, error) {
+	return b.matchOrder(), nil
+}
+
+func (b *orderbook) addNewOrder(order NewOrderSingle) ([]ExecutionReport, error) {
 	if order.OrderID() != "" {
 		execs := []ExecutionReport{}
 		order := NewOrder(order, newID(uuid.NewUUID()), time.Now())
@@ -43,7 +61,6 @@ func (b *orderbook) NewOrder(order NewOrderSingle) ([]ExecutionReport, error) {
 		} else {
 			b.sellOrders.Add(order)
 		}
-		execs = append(execs, b.matchOrder()...)
 		//fmt.Printf("NewOrder execs after in OrderBook %v", execs)
 		return execs, nil
 	}
@@ -62,14 +79,18 @@ func (b *orderbook) matchOrder() []ExecutionReport {
 				//fmt.Printf("buy \nsellorder %v \nbuyorder %v\n", sellorder, buyorder)
 				if buyorder.Price() >= sellorder.Price() {
 					toFill := min(sellorder.LeavesQty(), buyorder.LeavesQty())
-					if buyorder.fill(toFill) {
-						b.buyOrders.RemoveByID(buyorder.OrderID())
+					if toFill > 0 {
+						if buyorder.fill(toFill) {
+							b.buyOrders.RemoveByID(buyorder.OrderID())
+						}
+						matchexecs = append(matchexecs, MakeFillExecutionReport(buyorder, sellorder.Price(), toFill))
+						if sellorder.fill(toFill) {
+							b.sellOrders.RemoveByID(sellorder.OrderID())
+						}
+						matchexecs = append(matchexecs, MakeFillExecutionReport(sellorder, sellorder.Price(), toFill))
+					} else {
+						break
 					}
-					matchexecs = append(matchexecs, MakeFillExecutionReport(buyorder, sellorder.Price(), toFill))
-					if sellorder.fill(toFill) {
-						b.sellOrders.RemoveByID(sellorder.OrderID())
-					}
-					matchexecs = append(matchexecs, MakeFillExecutionReport(sellorder, sellorder.Price(), toFill))
 				}
 				//fmt.Printf("After loop buy \nsellorder %v \nbuyorder %v\n", sellorder, buyorder)
 			}

@@ -14,7 +14,7 @@ func init() {
 	godog.BindFlags("godog.", flag.CommandLine, &opt)
 }
 
-func Test_ATtes(t *testing.T) {
+func Test_Features(t *testing.T) {
 	flag.Parse()
 	opt.Paths = flag.Args()
 

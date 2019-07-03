@@ -4,8 +4,8 @@ type TimeInForce rune
 
 const (
 	TimeInForceDay            TimeInForce = '0'
-	TimeInForceGoodTillCancel             = '1'
-	TimeInForceUnknown                    = '?'
+	TimeInForceGoodTillCancel TimeInForce = '1'
+	TimeInForceUnknown        TimeInForce = '?'
 )
 
 func TimeInForceConv(str string) TimeInForce {
