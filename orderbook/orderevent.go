@@ -9,4 +9,6 @@ type OrderEvent interface {
 	Side() Side
 	OrderID() string
 	TransactTime() time.Time
+
+	isBuy() bool
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/google/uuid"
+	"log"
 	"testing"
 )
 
@@ -23,4 +24,8 @@ func dumpbytes(b []byte) {
 		fmt.Printf(" %08b", n) // prints 00000000 11111101
 	}
 	fmt.Println()
+}
+
+func loglines() {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 }

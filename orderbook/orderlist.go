@@ -1,7 +1,6 @@
 package orderbook
 
 import (
-	"fmt"
 	"github.com/emirpasic/gods/sets/treeset"
 )
 
@@ -102,7 +101,7 @@ func (p *orderlist) FindByPrice(price float64) []OrderState {
 		if floatEquals(iter.Value().(OrderState).Price(), price) {
 			order := iter.Value().(OrderState)
 			orders = append(orders, order)
-			fmt.Println("order", order)
+			//fmt.Println("order", order)
 		}
 	}
 	return orders

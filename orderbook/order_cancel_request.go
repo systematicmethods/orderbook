@@ -15,6 +15,8 @@ type OrderCancelRequest interface {
 	TransactTime() time.Time
 
 	OrderID() string
+
+	isBuy() bool
 }
 
 type orderCancelRequest struct {
@@ -76,4 +78,8 @@ func (p *orderCancelRequest) TransactTime() time.Time {
 
 func (p *orderCancelRequest) OrderID() string {
 	return p.orderID
+}
+
+func (p *orderCancelRequest) isBuy() bool {
+	return p.Side() == SideBuy
 }

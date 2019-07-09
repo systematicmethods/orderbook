@@ -95,6 +95,19 @@ func awaitExecutions(num int) error {
 	return fmt.Errorf("did not get %d execs, got %d", num, len(execs))
 }
 
+func containsExec(ex []orderbook.ExecutionReport, ac orderbook.ExecutionReport, msg string) error {
+	var found = 0
+	for _, v := range ex {
+		if err := compareExec(v, ac); err == nil {
+			found++
+		}
+	}
+	if found == 0 {
+		return fmt.Errorf("%s %v", msg, ac)
+	}
+	return nil
+}
+
 func executionsShouldBe(table *gherkin.DataTable) error {
 	slice, _ := assit.ParseSlice(table)
 	var expectedExecs []orderbook.ExecutionReport
@@ -102,13 +115,10 @@ func executionsShouldBe(table *gherkin.DataTable) error {
 		exec := makeExec(row)
 		expectedExecs = append(expectedExecs, exec)
 	}
-	for k, v := range expectedExecs {
-		//fmt.Printf("Exp      Execs value[%s]\n", v)
-		//fmt.Printf("Act k=%d Execs value[%s]\n", k, execs[k])
-		if err := compareExec(v, execs[k]); err != nil {
+	for _, ac := range execs {
+		if err := containsExec(expectedExecs, ac, "exec not found"); err != nil {
 			return err
 		}
-
 	}
 	return nil
 }
@@ -128,9 +138,15 @@ func orderStateShouldBe(table *gherkin.DataTable) error {
 
 	var errors strings.Builder
 	buyOrders := bk.BuyOrders()
-	assert.AssertEqualSB(len(expectedBuyState), len(buyOrders), "buy order state len different", &errors)
+	if !assert.AssertEqualSB(len(expectedBuyState), len(buyOrders), "buy order state len different", &errors) {
+		printState("expectedBuyState", expectedBuyState)
+		printState("buyOrders", buyOrders)
+	}
 	sellOrders := bk.SellOrders()
-	assert.AssertEqualSB(len(expectedSellState), len(sellOrders), "sell order state len different", &errors)
+	if !assert.AssertEqualSB(len(expectedSellState), len(sellOrders), "sell order state len different", &errors) {
+		printState("expectedSellState", expectedSellState)
+		printState("sellOrders", sellOrders)
+	}
 	if errors.Len() > 0 {
 		return fmt.Errorf(errors.String())
 	}
@@ -147,6 +163,12 @@ func orderStateShouldBe(table *gherkin.DataTable) error {
 		}
 	}
 	return nil
+}
+
+func printState(msg string, orders []orderbook.OrderState) {
+	for _, v := range orders {
+		fmt.Printf("%s: %v\n", msg, v)
+	}
 }
 
 func makeOrder(row map[string]string) orderbook.NewOrderSingle {

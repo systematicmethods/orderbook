@@ -92,6 +92,28 @@ func MakeNewOrderAckExecutionReport(ord OrderState) ExecutionReport {
 	})
 }
 
+func MakeRejectExecutionReport(ord NewOrderSingle) ExecutionReport {
+	theExecID, _ := uuid.NewUUID()
+	return ExecutionReport(&executionReport{
+		ord.InstrumentID(),
+		ord.ClientID(),
+		ord.ClOrdID(),
+		ord.Side(),
+		0,
+		0,
+		ExecTypeRejected,
+		0,
+		0,
+		OrdStatusRejected,
+		"",
+		ord.OrderID(),
+		theExecID.String(),
+		ord.OrderQty(),
+		ord.TransactTime(),
+		EventTypeRejected,
+	})
+}
+
 func MakeFillExecutionReport(ord OrderState, fillPrice float64, qty int64) ExecutionReport {
 	theExecID, _ := uuid.NewUUID()
 	var etype EventType

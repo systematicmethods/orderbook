@@ -1,7 +1,6 @@
 package orderbook
 
 import (
-	"fmt"
 	"orderbook/assert"
 	"testing"
 )
@@ -19,12 +18,8 @@ func Test_FindOrderByID(m *testing.T) {
 
 func Test_DidNotFindOrderByID(m *testing.T) {
 	pt := threeOrders(m, LowToHigh)
-
 	order := pt.FindByID("orderid11")
-
-	fmt.Printf("order %v", order)
 	assert.AssertNilT(m, order, "FindOrderByID")
-
 }
 
 func Test_FindOrderByPrice(m *testing.T) {

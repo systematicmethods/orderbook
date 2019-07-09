@@ -3,29 +3,45 @@ package assert
 import (
 	"fmt"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 )
 
-func AssertEqualT(t *testing.T, a interface{}, b interface{}, msg string) bool {
-	if a != b {
-		t.Errorf("%s was '%v' != '%v'", msg, a, b)
+func AssertEqualT(t *testing.T, ex interface{}, ac interface{}, msg string) bool {
+	if ex != ac {
+		_, file, line, _ := runtime.Caller(1)
+		t.Errorf("\n%s:%d: %s expected '%v' actual '%v'", AssertionAt(file), line, msg, ex, ac)
 		return false
 	}
 	return true
 }
 
-func AssertEqual(a interface{}, b interface{}, msg string) error {
-	if a != b {
-		return fmt.Errorf("%s was '%v' != '%v'", msg, a, b)
+func AssertionAt(file string) string {
+	var short string
+	for i := len(file) - 1; i > 0; i-- {
+		if file[i] == '/' {
+			short = file[i+1:]
+			break
+		}
+	}
+	return short
+}
+
+func AssertEqual(ex interface{}, ac interface{}, msg string) error {
+	if ex != ac {
+		return fmt.Errorf("%s expected '%v' actual '%v'", msg, ex, ac)
 	}
 	return nil
 }
 
-func AssertEqualSB(ex interface{}, ac interface{}, msg string, errors *strings.Builder) {
+func AssertEqualSB(ex interface{}, ac interface{}, msg string, errors *strings.Builder) bool {
 	if ex != ac {
-		fmt.Fprintf(errors, "%s expected '%v' actual '%v'", msg, ex, ac)
+		_, file, line, _ := runtime.Caller(1)
+		fmt.Fprintf(errors, "\n%s:%d: %s expected '%v' actual '%v'", AssertionAt(file), line, msg, ex, ac)
+		return false
 	}
+	return true
 }
 
 func AssertEqualTD(t *testing.T, a interface{}, b interface{}, msg string) {

@@ -11,8 +11,8 @@ func Test_OrderBook_Auction_AddBuySellOrder(t *testing.T) {
 	bk := MakeOrderBook(ins)
 	assert.AssertEqualT(t, *bk.Instrument(), ins, "instrument same")
 
-	e1, _ := bk.NewAuctionOrder(makeorder("cli1", "id1", SideBuy, 100, 1.01))
-	e2, _ := bk.NewAuctionOrder(makeorder("cl12", "id2", SideSell, 101, 1.03))
+	e1, _ := bk.NewAuctionOrder(makeLimitOrder("cli1", "id1", SideBuy, 100, 1.01))
+	e2, _ := bk.NewAuctionOrder(makeLimitOrder("cl12", "id2", SideSell, 101, 1.03))
 
 	assert.AssertEqualT(t, 1, len(e1), "e1 empty")
 	assert.AssertEqualT(t, 1, len(e2), "e2 empty")
@@ -28,12 +28,12 @@ func Test_OrderBook_Auction_MatchBuySellOrder(t *testing.T) {
 	ins := instrument.MakeInstrument(inst, "ABV Investments")
 	bk := MakeOrderBook(ins)
 
-	e10, _ := bk.NewAuctionOrder(makeorder("cl12", "id2", SideBuy, 100, 1.01))
-	e11, _ := bk.NewAuctionOrder(makeorder("cl12", "id3", SideBuy, 100, 1.01))
-	e12, _ := bk.NewAuctionOrder(makeorder("cl12", "id4", SideBuy, 100, 1.01))
-	e13, _ := bk.NewAuctionOrder(makeorder("cl12", "id5", SideBuy, 100, 1.01))
-	e21, _ := bk.NewAuctionOrder(makeorder("cli1", "id1", SideSell, 101, 1.00))
-	e22, _ := bk.NewAuctionOrder(makeorder("cli1", "id1", SideSell, 101, 1.00))
+	e10, _ := bk.NewAuctionOrder(makeLimitOrder("cl12", "id2", SideBuy, 100, 1.01))
+	e11, _ := bk.NewAuctionOrder(makeLimitOrder("cl12", "id3", SideBuy, 100, 1.01))
+	e12, _ := bk.NewAuctionOrder(makeLimitOrder("cl12", "id4", SideBuy, 100, 1.01))
+	e13, _ := bk.NewAuctionOrder(makeLimitOrder("cl12", "id5", SideBuy, 100, 1.01))
+	e21, _ := bk.NewAuctionOrder(makeLimitOrder("cli1", "id1", SideSell, 101, 1.00))
+	e22, _ := bk.NewAuctionOrder(makeLimitOrder("cli1", "id1", SideSell, 101, 1.00))
 
 	//printExecs(e2)
 
@@ -57,12 +57,12 @@ func Test_OrderBook_Auction_MatchSellBuyOrder(t *testing.T) {
 	ins := instrument.MakeInstrument(inst, "ABV Investments")
 	bk := MakeOrderBook(ins)
 
-	e10, _ := bk.NewAuctionOrder(makeorder("cl12", "id2", SideSell, 100, 1.00))
-	e11, _ := bk.NewAuctionOrder(makeorder("cl12", "id3", SideSell, 100, 1.00))
-	e12, _ := bk.NewAuctionOrder(makeorder("cl12", "id4", SideSell, 100, 1.00))
-	e13, _ := bk.NewAuctionOrder(makeorder("cl12", "id5", SideSell, 100, 1.00))
-	e21, _ := bk.NewAuctionOrder(makeorder("cli1", "id1", SideBuy, 101, 1.01))
-	e22, _ := bk.NewAuctionOrder(makeorder("cli1", "id1", SideBuy, 101, 1.01))
+	e10, _ := bk.NewAuctionOrder(makeLimitOrder("cl12", "id2", SideSell, 100, 1.00))
+	e11, _ := bk.NewAuctionOrder(makeLimitOrder("cl12", "id3", SideSell, 100, 1.00))
+	e12, _ := bk.NewAuctionOrder(makeLimitOrder("cl12", "id4", SideSell, 100, 1.00))
+	e13, _ := bk.NewAuctionOrder(makeLimitOrder("cl12", "id5", SideSell, 100, 1.00))
+	e21, _ := bk.NewAuctionOrder(makeLimitOrder("cli1", "id1", SideBuy, 101, 1.01))
+	e22, _ := bk.NewAuctionOrder(makeLimitOrder("cli1", "id1", SideBuy, 101, 1.01))
 
 	//printExecs(e2)
 

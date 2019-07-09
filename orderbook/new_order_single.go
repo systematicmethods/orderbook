@@ -19,6 +19,8 @@ type NewOrderSingle interface {
 	TransactTime() time.Time
 
 	OrderID() string
+
+	isBuy() bool
 }
 
 type newOrderSingle struct {
@@ -133,4 +135,8 @@ func (p *newOrderSingle) ExpireOn() time.Time {
 
 func (p *newOrderSingle) TransactTime() time.Time {
 	return p.transactTime
+}
+
+func (p *newOrderSingle) isBuy() bool {
+	return p.Side() == SideBuy
 }
