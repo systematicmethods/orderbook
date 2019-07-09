@@ -102,7 +102,7 @@ func MakeRejectExecutionReport(ord NewOrderSingle) ExecutionReport {
 		0,
 		0,
 		ExecTypeRejected,
-		0,
+		ord.OrderQty(),
 		0,
 		OrdStatusRejected,
 		"",

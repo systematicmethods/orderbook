@@ -90,3 +90,37 @@ Feature: Limit Order Fill
       | Event           | ClientID  | Instrument | Side | OrdType | ClOrdID  | Price | Qty  | ExpireOn | TimeInForce    | OrigClOrdID | LastQty | LastPrice | CumQty | Status           | ExecType  | Reason | ExecID   | OrderID  | LeavesQty | TransactTime | CreatedOn | UpdatedOn | Timestamp |
       | PartiallyFilled | John_01   | ABV        | Buy  | Limit   | John_01o | 1.03  | 1100 |          | GoodTillCancel |             |         |           | 1000   | PartiallyFilled  |           |        | Not Null | Not Null | 100       |              |           |           |           |
 
+
+  Scenario: Cannot Buy / Sell from yourself
+    Given An order book for instrument "ABV"
+    When users send orders with:
+      | Event           | ClientID  | Instrument | Side | OrdType | ClOrdID  | Price | Qty  | ExpireOn | TimeInForce    | OrigClOrdID |
+      | NewOrder        | John_01   | ABV        | Buy  | Limit   | John_01o | 1.03  | 1000 |          | GoodTillCancel |             |
+      | NewOrder        | John_01   | ABV        | Sell | Limit   | John_02o | 1.03  | 1000 |          | GoodTillCancel |             |
+    Then await 3 executions
+    And executions should be:
+      | Event           | ClientID  | Instrument | Side | OrdType | ClOrdID  | Price | Qty  | ExpireOn | TimeInForce    | OrigClOrdID | LastQty | LastPrice | CumQty | Status    | ExecType  | Reason | ExecID   | OrderID  | LeavesQty | TransactTime |
+      | NewOrderAck     | John_01   | ABV        | Buy  | Limit   | John_01o | 1.03  | 1000 |          | GoodTillCancel |             | 0       |           | 0      | New       | New       |        | Not Null | Not Null | 1000      |              |
+      | NewOrderAck     | John_01   | ABV        | Sell | Limit   | John_02o | 1.03  | 1000 |          | GoodTillCancel |             | 0       |           | 0      | New       | New       |        | Not Null | Not Null | 1000      |              |
+      | Rejected        | John_01   | ABV        | Sell | Limit   | John_02o | 1.03  | 1000 |          | GoodTillCancel |             | 0       | 0         | 0      | Rejected  | Rejected  |        | Not Null | Not Null | 1000      |              |
+    And order state should be:
+      | Event           | ClientID  | Instrument | Side | OrdType | ClOrdID  | Price | Qty  | ExpireOn | TimeInForce    | OrigClOrdID | LastQty | LastPrice | CumQty | Status    | ExecType  | Reason | ExecID   | OrderID  | LeavesQty | TransactTime | CreatedOn | UpdatedOn | Timestamp |
+      | NewOrder        | John_01   | ABV        | Buy  | Limit   | John_01o | 1.03  | 1000 |          | GoodTillCancel |             |         |           | 0      | New       |           |        | Not Null | Not Null | 1000      |              |           |           |           |
+
+
+  Scenario: Cannot Sell / Buy  from yourself
+    Given An order book for instrument "ABV"
+    When users send orders with:
+      | Event           | ClientID  | Instrument | Side | OrdType | ClOrdID  | Price | Qty  | ExpireOn | TimeInForce    | OrigClOrdID |
+      | NewOrder        | John_01   | ABV        | Sell | Limit   | John_01o | 1.03  | 1000 |          | GoodTillCancel |             |
+      | NewOrder        | John_01   | ABV        | Buy  | Limit   | John_02o | 1.03  | 1000 |          | GoodTillCancel |             |
+    Then await 3 executions
+    And executions should be:
+      | Event           | ClientID  | Instrument | Side | OrdType | ClOrdID  | Price | Qty  | ExpireOn | TimeInForce    | OrigClOrdID | LastQty | LastPrice | CumQty | Status    | ExecType  | Reason | ExecID   | OrderID  | LeavesQty | TransactTime |
+      | NewOrderAck     | John_01   | ABV        | Sell | Limit   | John_01o | 1.03  | 1000 |          | GoodTillCancel |             | 0       |           | 0      | New       | New       |        | Not Null | Not Null | 1000      |              |
+      | NewOrderAck     | John_01   | ABV        | Buy  | Limit   | John_02o | 1.03  | 1000 |          | GoodTillCancel |             | 0       |           | 0      | New       | New       |        | Not Null | Not Null | 1000      |              |
+      | Rejected        | John_01   | ABV        | Buy  | Limit   | John_02o | 1.03  | 1000 |          | GoodTillCancel |             | 0       | 0         | 0      | Rejected  | Rejected  |        | Not Null | Not Null | 1000      |              |
+    And order state should be:
+      | Event           | ClientID  | Instrument | Side | OrdType | ClOrdID  | Price | Qty  | ExpireOn | TimeInForce    | OrigClOrdID | LastQty | LastPrice | CumQty | Status    | ExecType  | Reason | ExecID   | OrderID  | LeavesQty | TransactTime | CreatedOn | UpdatedOn | Timestamp |
+      | NewOrder        | John_01   | ABV        | Sell | Limit   | John_01o | 1.03  | 1000 |          | GoodTillCancel |             |         |           | 0      | New       |           |        | Not Null | Not Null | 1000      |              |           |           |           |
+

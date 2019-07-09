@@ -66,6 +66,7 @@ func anOrderBookForInstrument(inst string) error {
 }
 
 func usersSendOrdersWith(table *gherkin.DataTable) error {
+	execs = []orderbook.ExecutionReport{}
 	slice, _ := assit.ParseSlice(table)
 	for _, row := range slice {
 		switch orderbook.EventTypeConv(row[tabEvent]) {
@@ -103,6 +104,7 @@ func containsExec(ex []orderbook.ExecutionReport, ac orderbook.ExecutionReport, 
 		}
 	}
 	if found == 0 {
+		printExecs(msg, ex)
 		return fmt.Errorf("%s %v", msg, ac)
 	}
 	return nil
@@ -171,6 +173,12 @@ func printState(msg string, orders []orderbook.OrderState) {
 	}
 }
 
+func printExecs(msg string, execs []orderbook.ExecutionReport) {
+	for _, v := range execs {
+		fmt.Printf("%s: %v\n", msg, v)
+	}
+}
+
 func makeOrder(row map[string]string) orderbook.NewOrderSingle {
 	price, _ := strconv.ParseFloat(row[tabPrice], 64)
 	qty, _ := strconv.ParseInt(row[tabQty], 10, 64)
@@ -183,6 +191,16 @@ func makeOrder(row map[string]string) orderbook.NewOrderSingle {
 			row[tabClOrdID],
 			orderbook.SideConv(row[tabSide]),
 			price,
+			qty,
+			orderbook.TimeInForceConv(row[tabTimeInForce]),
+			dt,
+			dt)
+	} else if row[tabOrdType] == "Market" {
+		return orderbook.MakeNewOrderMarket(
+			row[tabInstrument],
+			row[tabClientID],
+			row[tabClOrdID],
+			orderbook.SideConv(row[tabSide]),
 			qty,
 			orderbook.TimeInForceConv(row[tabTimeInForce]),
 			dt,

@@ -108,6 +108,10 @@ func (b *orderbook) matchOrderOnBook(order NewOrderSingle) ([]ExecutionReport, e
 	if order.isBuy() && b.sellOrders.Size() > 0 {
 		for iter := b.sellOrders.iterator(); iter.Next() == true; {
 			bookorder := iter.Value().(OrderState)
+			if order.ClientID() == bookorder.ClientID() {
+				matchexecs = append(matchexecs, MakeRejectExecutionReport(order))
+				return matchexecs, nil
+			}
 			//fmt.Printf("buy \nbookorder %v \nneworder %v\n", bookorder, neworder)
 			if (neworder.OrderType() == OrderTypeMarket || bookorder.OrderType() == OrderTypeMarket) || neworder.Price() >= bookorder.Price() {
 				toFill := min(bookorder.LeavesQty(), neworder.LeavesQty())
@@ -128,6 +132,10 @@ func (b *orderbook) matchOrderOnBook(order NewOrderSingle) ([]ExecutionReport, e
 	} else if !order.isBuy() && b.buyOrders.Size() > 0 {
 		for iter := b.buyOrders.iterator(); iter.Next() == true; {
 			bookorder := iter.Value().(OrderState)
+			if order.ClientID() == bookorder.ClientID() {
+				matchexecs = append(matchexecs, MakeRejectExecutionReport(order))
+				return matchexecs, nil
+			}
 			//fmt.Printf("buy \nbookorder %v \nneworder %v\n", bookorder, neworder)
 			if (neworder.OrderType() == OrderTypeMarket || bookorder.OrderType() == OrderTypeMarket) || neworder.Price() <= bookorder.Price() {
 				toFill := min(bookorder.LeavesQty(), neworder.LeavesQty())
