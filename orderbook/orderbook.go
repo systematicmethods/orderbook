@@ -15,40 +15,88 @@ type OrderBook interface {
 	BuyOrders() []OrderState
 	SellOrders() []OrderState
 
-	NewAuctionOrder(order NewOrderSingle) ([]ExecutionReport, error)
-	Auction() ([]ExecutionReport, error)
+	OpenTrading() error
+	CloseTrading() error
+	CloseTradingAndOpenAuction() error
+	OpenAuction() error
+	CloseAuction() ([]ExecutionReport, error)
+	CloseAuctionAndOpenTrading() ([]ExecutionReport, error)
 
 	matchOrder() []ExecutionReport
 	addNewOrder(order NewOrderSingle) ([]ExecutionReport, error)
 	matchOrderOnBook(order NewOrderSingle) ([]ExecutionReport, error)
 }
 
-func MakeOrderBook(instrument instrument.Instrument) OrderBook {
+func MakeOrderBook(instrument instrument.Instrument, orderBookEvent OrderBookEventType) OrderBook {
 	b := orderbook{instrument: &instrument}
 	b.buyOrders = NewOrderList(HighToLow)
 	b.sellOrders = NewOrderList(HighToLow)
+	b.orderBookState = OrderBookEventTypeAs(orderBookEvent)
 	return OrderBook(&b)
 }
 
 type orderbook struct {
-	instrument *instrument.Instrument
-	buyOrders  OrderList
-	sellOrders OrderList
+	instrument     *instrument.Instrument
+	buyOrders      OrderList
+	sellOrders     OrderList
+	orderBookState OrderBookState
 }
 
 func (b *orderbook) NewOrder(order NewOrderSingle) ([]ExecutionReport, error) {
-	//execs, _ := b.addNewOrder(order)
-	execs, _ := b.matchOrderOnBook(order)
-	//execs = append(execs, b.matchOrder()...)
-	return execs, nil
+	execs, err := b.matchOrderOnBook(order)
+	return execs, err
 }
 
-func (b *orderbook) NewAuctionOrder(order NewOrderSingle) ([]ExecutionReport, error) {
-	return b.addNewOrder(order)
+//func (b *orderbook) NewAuctionOrder(order NewOrderSingle) ([]ExecutionReport, error) {
+//	return b.addNewOrder(order)
+//}
+
+func (b *orderbook) OpenTrading() error {
+	if b.orderBookState == OrderBookStateAuctionOpen {
+		return AuctionOpen
+	}
+	b.orderBookState = OrderBookStateTradingOpen
+	return nil
 }
 
-func (b *orderbook) Auction() ([]ExecutionReport, error) {
-	return b.matchOrder(), nil
+func (b *orderbook) CloseTrading() error {
+	if b.orderBookState != OrderBookStateTradingOpen {
+		return TradingNotOpen
+	}
+	b.orderBookState = OrderBookStateTradingClosed
+	return nil
+}
+
+func (b *orderbook) CloseTradingAndOpenAuction() error {
+	if b.orderBookState != OrderBookStateTradingOpen {
+		return TradingNotOpen
+	}
+	b.orderBookState = OrderBookStateAuctionOpen
+	return nil
+}
+
+func (b *orderbook) CloseAuction() ([]ExecutionReport, error) {
+	if b.orderBookState != OrderBookStateAuctionOpen {
+		return nil, AuctionNotOpen
+	}
+	ex := b.matchOrder()
+	// TODO: Cancel remaining orders in the auction
+	b.orderBookState = OrderBookStateAuctionClosed
+	return ex, nil
+}
+
+func (b *orderbook) CloseAuctionAndOpenTrading() ([]ExecutionReport, error) {
+	if b.orderBookState != OrderBookStateAuctionOpen {
+		return nil, AuctionNotOpen
+	}
+	ex := b.matchOrder()
+	b.orderBookState = OrderBookStateTradingOpen
+	return ex, nil
+}
+
+func (b *orderbook) OpenAuction() error {
+	b.orderBookState = OrderBookStateAuctionOpen
+	return nil
 }
 
 func (b *orderbook) addNewOrder(order NewOrderSingle) ([]ExecutionReport, error) {
@@ -84,6 +132,15 @@ func (b *orderbook) addNewOrder(order NewOrderSingle) ([]ExecutionReport, error)
 
 func (b *orderbook) matchOrderOnBook(order NewOrderSingle) ([]ExecutionReport, error) {
 	matchexecs := []ExecutionReport{}
+
+	// reject all orders when trading not open
+	if b.orderBookState != OrderBookStateTradingOpen {
+		if b.orderBookState == OrderBookStateAuctionOpen {
+			return b.addNewOrder(order)
+		}
+		matchexecs = append(matchexecs, MakeRejectExecutionReport(order))
+		return matchexecs, nil
+	}
 
 	// reject market orders if there are no limit orders
 	if order.OrderType() == OrderTypeMarket {

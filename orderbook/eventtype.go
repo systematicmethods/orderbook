@@ -33,6 +33,8 @@ func EventTypeConv(thetype string) EventType {
 		return EventTypeCancel
 	case "Cancelled":
 		return EventTypeCancelled
+	case "CancelRejected":
+		return EventTypeCancelRejected
 	case "Rejected":
 		return EventTypeRejected
 	case "Replaced":
@@ -41,6 +43,9 @@ func EventTypeConv(thetype string) EventType {
 		return EventTypeDone
 	case "Expired":
 		return EventTypeExpired
+	case "DoneForDay":
+		return EventTypeDoneForDay
 	}
+
 	return EventTypeUnknown
 }

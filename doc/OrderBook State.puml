@@ -1,0 +1,27 @@
+@startuml
+NotTrading --> TradingOpen: OpenTrading
+NotTrading: Add limit orders to book
+NotTrading: Add auction orders to book
+
+TradingOpen --> TradingClosed: CloseTrading
+TradingOpen --> AuctionOpen: CloseTrading-OpenAuction
+TradingOpen --> CancelExpiredOrders: Timer
+TradingOpen: Match orders as they arrive
+TradingOpen: Add auction orders to book
+
+CancelExpiredOrders --> TradingOpen: Done
+CancelExpiredOrders: Cancel expired orders
+
+AuctionOpen --> AuctionClosed: CloseAuction
+AuctionOpen --> TradingOpen: CloseAuction-OpenTrading
+AuctionOpen: Accept orders
+
+AuctionClosed --> NotTrading
+AuctionClosed: Calculate closing price
+AuctionClosed: Match orders at close
+AuctionClosed: Cancel unfilled auction orders
+
+TradingClosed --> NotTrading
+TradingClosed: Cancel day orders
+
+@enduml

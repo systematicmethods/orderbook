@@ -9,7 +9,7 @@ import (
 
 func Test_OrderBook_RejectBuySellMarketOrder(t *testing.T) {
 	ins := instrument.MakeInstrument(inst, "ABV Investments")
-	bk := MakeOrderBook(ins)
+	bk := MakeOrderBook(ins, OrderBookEventTypeOpenTrading)
 	assert.AssertEqualT(t, *bk.Instrument(), ins, "instrument same")
 
 	e1, _ := bk.NewOrder(makeMarketOrder("cli1", "id1", SideBuy, 100))
@@ -26,7 +26,7 @@ func Test_OrderBook_RejectBuySellMarketOrder(t *testing.T) {
 func Test_OrderBook_MatchBuyLimitSellMarket(t *testing.T) {
 	loglines()
 	ins := instrument.MakeInstrument(inst, "ABV Investments")
-	bk := MakeOrderBook(ins)
+	bk := MakeOrderBook(ins, OrderBookEventTypeOpenTrading)
 
 	e1, _ := bk.NewOrder(makeLimitOrder("cli1", "id1", SideBuy, 101, 1.00))
 	e2, _ := bk.NewOrder(makeMarketOrder("cli2", "id2", SideSell, 100))
@@ -62,7 +62,7 @@ func containsExec(t *testing.T, execs []ExecutionReport, clientID string, clOrdI
 
 func Test_OrderBook_MatchSellLimitBuyMarket(t *testing.T) {
 	ins := instrument.MakeInstrument(inst, "ABV Investments")
-	bk := MakeOrderBook(ins)
+	bk := MakeOrderBook(ins, OrderBookEventTypeOpenTrading)
 
 	e1, _ := bk.NewOrder(makeLimitOrder("cli1", "id1", SideSell, 101, 1.00))
 	e2, _ := bk.NewOrder(makeMarketOrder("cli2", "id2", SideBuy, 100))
@@ -81,7 +81,7 @@ func Test_OrderBook_MatchSellLimitBuyMarket(t *testing.T) {
 
 func Test_OrderBook_MatchBuyLimitSellMarketLeaves(t *testing.T) {
 	ins := instrument.MakeInstrument(inst, "ABV Investments")
-	bk := MakeOrderBook(ins)
+	bk := MakeOrderBook(ins, OrderBookEventTypeOpenTrading)
 
 	e1, _ := bk.NewOrder(makeLimitOrder("cli1", "id1", SideBuy, 101, 1.00))
 	e2, _ := bk.NewOrder(makeMarketOrder("cli2", "id2", SideSell, 105))
@@ -100,7 +100,7 @@ func Test_OrderBook_MatchBuyLimitSellMarketLeaves(t *testing.T) {
 
 func Test_OrderBook_MatchSellLimitBuyMarketLeaves(t *testing.T) {
 	ins := instrument.MakeInstrument(inst, "ABV Investments")
-	bk := MakeOrderBook(ins)
+	bk := MakeOrderBook(ins, OrderBookEventTypeOpenTrading)
 
 	e1, _ := bk.NewOrder(makeLimitOrder("cli1", "id1", SideSell, 101, 1.00))
 	e2, _ := bk.NewOrder(makeMarketOrder("cli2", "id2", SideBuy, 105))
