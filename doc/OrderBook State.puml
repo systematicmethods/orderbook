@@ -1,27 +1,42 @@
 @startuml
-NotTrading --> TradingOpen: OpenTrading
-NotTrading: Add limit orders to book
-NotTrading: Add auction orders to book
+[*] --> NoTrading
+NoTrading --> TradingOpen: OpenTrading
+NoTrading --> AuctionOpen: OpenAuction
+NoTrading --> NoTrading: NewOrder
+NoTrading --> NoTrading: NewAuctionOrder :TDOD
+NoTrading --> NoTrading: Timer
+NoTrading: (NewOrder) Add limit orders to order book
+NoTrading: (NewAuctionOrder) Add auction orders to auction book
+NoTrading: (Timer) Time to OpenTrading or OpenAuction
 
+TradingOpen --> TradingOpen: NewOrder
+TradingOpen --> TradingOpen: NewAuctionOrder :TDOD
+TradingOpen --> TradingOpen: Timer
 TradingOpen --> TradingClosed: CloseTrading
-TradingOpen --> AuctionOpen: CloseTrading-OpenAuction
-TradingOpen --> CancelExpiredOrders: Timer
-TradingOpen: Match orders as they arrive
-TradingOpen: Add auction orders to book
-
-CancelExpiredOrders --> TradingOpen: Done
-CancelExpiredOrders: Cancel expired orders
+TradingOpen: (OpenTrading) Match all orders on book
+TradingOpen: (NewOrder) Match order
+TradingOpen: (NewAuctionOrder) Add to auction book
+TradingOpen: (Timer) Cancel expired orders
+TradingOpen: (Timer) Time to close Trading?
 
 AuctionOpen --> AuctionClosed: CloseAuction
-AuctionOpen --> TradingOpen: CloseAuction-OpenTrading
-AuctionOpen: Accept orders
+AuctionOpen --> AuctionOpen: NewAuctionOrder
+AuctionOpen --> AuctionOpen: NewOrder
+AuctionOpen --> AuctionOpen: Timer
+AuctionOpen: (NewAuctionOrder) Add to auction book
+AuctionOpen: (NewOrder) Add limit orders to order book
+AuctionOpen: (Timer) Time to close auction?
 
-AuctionClosed --> NotTrading
+AuctionClosed --> NoTrading: NoTrading
+AuctionClosed --> TradingOpen: OpenTrading
 AuctionClosed: Calculate closing price
-AuctionClosed: Match orders at close
+AuctionClosed: Match auction and book orders at close
 AuctionClosed: Cancel unfilled auction orders
+AuctionClosed: OpenTrading or NoTrading?
 
-TradingClosed --> NotTrading
+TradingClosed --> NoTrading: NoTrading
+TradingClosed --> AuctionOpen: OpenAuction
 TradingClosed: Cancel day orders
+TradingClosed: OpenAuction or NoTrading?
 
 @enduml
