@@ -42,10 +42,11 @@ type executionReport struct {
 	ordStatus   OrdStatus
 	origClOrdID string
 
-	orderID      string
-	execID       string
-	orderQty     int64
-	transactTime time.Time
+	orderID               string
+	execID                string
+	orderQty              int64
+	transactTime          time.Time
+	execRestatementReason ExecRestatementReason
 
 	eventType EventType
 }
@@ -88,6 +89,7 @@ func MakeNewOrderAckExecutionReport(ord OrderState) ExecutionReport {
 		theExecID.String(),
 		ord.OrderQty(),
 		ord.TransactTime(),
+		ExecRestatementReasonNone,
 		EventTypeNewOrderAck,
 	})
 }
@@ -110,6 +112,7 @@ func MakeRejectExecutionReport(ord NewOrderSingle) ExecutionReport {
 		theExecID.String(),
 		ord.OrderQty(),
 		ord.TransactTime(),
+		ExecRestatementReasonNone,
 		EventTypeRejected,
 	})
 }
@@ -138,6 +141,7 @@ func MakeFillExecutionReport(ord OrderState, fillPrice float64, qty int64) Execu
 		theExecID.String(),
 		ord.OrderQty(),
 		ord.TransactTime(),
+		ExecRestatementReasonNone,
 		etype,
 	})
 }
@@ -160,9 +164,34 @@ func MakeCancelOrderExecutionReport(ord OrderState, order OrderCancelRequest) Ex
 		theExecID.String(),
 		ord.OrderQty(),
 		ord.TransactTime(),
+		ExecRestatementReasonNone,
 		EventTypeCancelAck,
 	})
 }
+
+func MakeRestateOrderExecutionReport(ord OrderState) ExecutionReport {
+	theExecID, _ := uuid.NewUUID()
+	return ExecutionReport(&executionReport{
+		ord.InstrumentID(),
+		ord.ClientID(),
+		ord.ClOrdID(),
+		ord.Side(),
+		0,
+		0,
+		ExecTypeRestated,
+		ord.LeavesQty(),
+		ord.CumQty(),
+		OrdStatusCanceled,
+		"",
+		ord.OrderID(),
+		theExecID.String(),
+		ord.OrderQty(),
+		ord.TransactTime(),
+		ExecRestatementReasonCancelOnTradingHalt,
+		EventTypeRestated,
+	})
+}
+
 func MakeExecutionReport(
 	eventType EventType,
 	instrumentID string,
@@ -197,6 +226,7 @@ func MakeExecutionReport(
 		execID,
 		orderQty,
 		transactTime,
+		ExecRestatementReasonNone,
 		eventType,
 	})
 }

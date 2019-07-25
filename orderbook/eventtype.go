@@ -16,6 +16,7 @@ const (
 	EventTypeDoneForDay
 	EventTypeExpired
 	EventTypeDone
+	EventTypeRestated
 	EventTypeUnknown
 )
 

@@ -57,13 +57,26 @@ type orderbook struct {
 
 func (b *orderbook) NewOrder(order NewOrderSingle) ([]ExecutionReport, error) {
 	execs := []ExecutionReport{}
-	// reject all orders when trading not open
-	if b.orderBookState != OrderBookStateTradingOpen {
-		if b.orderBookState == OrderBookStateAuctionOpen {
-			return addNewOrder(order, &b.auctionOrders)
-		}
+	if b.orderBookState == OrderBookStateTradingClosed && order.TimeInForce() != TimeInForceGoodForAuction { //|| b.orderBookState == OrderBookStateAuctionClosed
 		execs = append(execs, MakeRejectExecutionReport(order))
 		return execs, nil
+	}
+
+	if b.orderBookState == OrderBookStateAuctionClosed && order.TimeInForce() == TimeInForceGoodForAuction {
+		execs = append(execs, MakeRejectExecutionReport(order))
+		return execs, nil
+	}
+
+	if order.TimeInForce() == TimeInForceGoodForAuction {
+		return addNewOrder(order, &b.auctionOrders)
+	}
+
+	if b.orderBookState != OrderBookStateTradingOpen {
+		if order.OrderType() == OrderTypeMarket {
+			execs = append(execs, MakeRejectExecutionReport(order))
+			return execs, nil
+		}
+		return addNewOrder(order, &b.obOrders)
 	}
 
 	// reject market orders if there are no limit orders
@@ -115,13 +128,33 @@ func (b *orderbook) OpenAuction() error {
 
 func (b *orderbook) CloseAuction() ([]ExecutionReport, error) {
 	var err error
-	ex := []ExecutionReport{}
+	execs := []ExecutionReport{}
 	b.orderBookState, err = OrderBookStateChange(b.orderBookState, OrderBookEventTypeCloseAuction)
 	if err == nil {
-		ex = matchOrdersOnBook(&b.auctionOrders)
+		var exs []ExecutionReport = matchOrdersOnBook(&b.auctionOrders)
+		execs = append(execs, exs...)
 		// TODO: Cancel remaining action orders in the auction
+		exs = cancelOrders(&b.auctionOrders)
+		execs = append(execs, exs...)
 	}
-	return ex, err
+	return execs, err
+}
+
+func cancelOrders(bs *buySellOrders) []ExecutionReport {
+	execs := []ExecutionReport{}
+	for iter := bs.buyOrders.iterator(); iter.Next() == true; {
+		order := iter.Value().(OrderState)
+		bs.buyOrders.RemoveByID(order.OrderID())
+		exec := MakeRestateOrderExecutionReport(order)
+		execs = append(execs, exec)
+	}
+	for iter := bs.sellOrders.iterator(); iter.Next() == true; {
+		order := iter.Value().(OrderState)
+		bs.sellOrders.RemoveByID(order.OrderID())
+		exec := MakeRestateOrderExecutionReport(order)
+		execs = append(execs, exec)
+	}
+	return execs
 }
 
 func addNewOrder(order NewOrderSingle, bs *buySellOrders) ([]ExecutionReport, error) {

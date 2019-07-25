@@ -78,19 +78,6 @@ func Test_OrderBook_MatchSellBuyOrder(t *testing.T) {
 	containsExec(t, e2, "cli1", "id3", OrdStatusPartiallyFilled, "partially filled bk order", 1, 1.00)
 }
 
-func Test_OrderBook_TradingClosed(t *testing.T) {
-	ins := instrument.MakeInstrument(inst, "ABV Investments")
-	bk := MakeOrderBook(ins, OrderBookEventTypeCloseTrading)
-
-	e10, _ := bk.NewOrder(makeLimitOrder("cli1", "id1", SideBuy, 100, 1.00))
-	assert.AssertEqualT(t, 1, len(e10), "e10")
-	containsExec(t, e10, "cli1", "id1", OrdStatusRejected, "rejected", 0, 0)
-
-	e11, _ := bk.NewOrder(makeLimitOrder("cli2", "id1", SideSell, 100, 1.00))
-	assert.AssertEqualT(t, 1, len(e11), "e11")
-	containsExec(t, e11, "cli2", "id1", OrdStatusRejected, "rejected", 0, 0)
-}
-
 func makeLimitOrder(clientID string, clOrdID string, side Side, qty int64, price float64) NewOrderSingle {
 	loc, _ := time.LoadLocation("UTC")
 	dt := time.Date(2019, 10, 11, 11, 11, 1, 0, loc)
