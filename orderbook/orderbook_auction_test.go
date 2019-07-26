@@ -124,7 +124,7 @@ func Test_OrderBook_Auction_MatchSellBuyOrderPlaceDuringTrading(t *testing.T) {
 
 	_, err := bk.OpenTrading()
 	assert.AssertNilT(t, err, "should close trading")
-	err = bk.CloseTrading()
+	_, err = bk.CloseTrading()
 	assert.AssertNilT(t, err, "should close trading")
 	err = bk.OpenAuction()
 	assert.AssertNilT(t, err, "should open an auction")

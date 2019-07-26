@@ -13,7 +13,7 @@ type OrderBook interface {
 	CancelOrder(order OrderCancelRequest) (ExecutionReport, error)
 
 	OpenTrading() ([]ExecutionReport, error)
-	CloseTrading() error
+	CloseTrading() ([]ExecutionReport, error)
 	NoTrading() error
 	OpenAuction() error
 	CloseAuction() ([]ExecutionReport, error)
@@ -57,7 +57,7 @@ type orderbook struct {
 
 func (b *orderbook) NewOrder(order NewOrderSingle) ([]ExecutionReport, error) {
 	execs := []ExecutionReport{}
-	if b.orderBookState == OrderBookStateTradingClosed && order.TimeInForce() != TimeInForceGoodForAuction { //|| b.orderBookState == OrderBookStateAuctionClosed
+	if b.orderBookState == OrderBookStateTradingClosed && order.TimeInForce() != TimeInForceGoodForAuction {
 		execs = append(execs, MakeRejectExecutionReport(order))
 		return execs, nil
 	}
@@ -108,12 +108,35 @@ func (b *orderbook) OpenTrading() ([]ExecutionReport, error) {
 	return ex, err
 }
 
-func (b *orderbook) CloseTrading() error {
+func (b *orderbook) CloseTrading() ([]ExecutionReport, error) {
 	var err error
 	b.orderBookState, err = OrderBookStateChange(b.orderBookState, OrderBookEventTypeCloseTrading)
-	return err
+	if err == nil {
+		return cancelDayOrders(&b.obOrders), nil
+	}
+	return nil, err
 }
 
+func cancelDayOrders(bs *buySellOrders) []ExecutionReport {
+	execs := []ExecutionReport{}
+	for iter := bs.buyOrders.iterator(); iter.Next() == true; {
+		order := iter.Value().(OrderState)
+		if order.TimeInForce() == TimeInForceDay {
+			bs.buyOrders.RemoveByID(order.OrderID())
+			exec := MakeRestateOrderExecutionReport(order)
+			execs = append(execs, exec)
+		}
+	}
+	for iter := bs.sellOrders.iterator(); iter.Next() == true; {
+		order := iter.Value().(OrderState)
+		if order.TimeInForce() == TimeInForceDay {
+			bs.sellOrders.RemoveByID(order.OrderID())
+			exec := MakeRestateOrderExecutionReport(order)
+			execs = append(execs, exec)
+		}
+	}
+	return execs
+}
 func (b *orderbook) NoTrading() error {
 	var err error
 	b.orderBookState, err = OrderBookStateChange(b.orderBookState, OrderBookEventTypeNoTrading)
@@ -133,7 +156,6 @@ func (b *orderbook) CloseAuction() ([]ExecutionReport, error) {
 	if err == nil {
 		var exs []ExecutionReport = matchOrdersOnBook(&b.auctionOrders)
 		execs = append(execs, exs...)
-		// TODO: Cancel remaining action orders in the auction
 		exs = cancelOrders(&b.auctionOrders)
 		execs = append(execs, exs...)
 	}

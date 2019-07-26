@@ -93,6 +93,21 @@ func makeLimitOrder(clientID string, clOrdID string, side Side, qty int64, price
 		dt)
 }
 
+func makeLimitOrderDay(clientID string, clOrdID string, side Side, qty int64, price float64) NewOrderSingle {
+	loc, _ := time.LoadLocation("UTC")
+	dt := time.Date(2019, 10, 11, 11, 11, 1, 0, loc)
+	return MakeNewOrderLimit(
+		inst,
+		clientID,
+		clOrdID,
+		side,
+		price,
+		qty,
+		TimeInForceDay,
+		dt,
+		dt)
+}
+
 func makeAuctionLimitOrder(clientID string, clOrdID string, side Side, qty int64, price float64) NewOrderSingle {
 	loc, _ := time.LoadLocation("UTC")
 	dt := time.Date(2019, 10, 11, 11, 11, 1, 0, loc)
