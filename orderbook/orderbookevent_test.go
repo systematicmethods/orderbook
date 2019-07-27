@@ -6,8 +6,14 @@ import (
 )
 
 func Test_OrderBookChangeStateNoTradingToOpenTrading(t *testing.T) {
-	var state, error = OrderBookStateChange(OrderBookStateNoTrading, OrderBookEventTypeOpenTrading)
-	assert.AssertEqualT(t, OrderBookStateTradingOpen, state, "open")
+	var state, error = OrderBookStateChange(OrderBookStateOrderEntryClosed, OrderBookEventTypeOpenTrading)
+	assert.AssertEqualT(t, OrderBookStateOrderEntryClosed, state, "open")
+	assert.AssertNotNilT(t, error, "error null")
+}
+
+func Test_OrderBookChangeStateNoTradingToOrderEntryOpen(t *testing.T) {
+	var state, error = OrderBookStateChange(OrderBookStateOrderEntryClosed, OrderBookEventTypeOpenOrderEntry)
+	assert.AssertEqualT(t, OrderBookStateOrderEntryOpen, state, "open")
 	assert.AssertNilT(t, error, "error null")
 }
 

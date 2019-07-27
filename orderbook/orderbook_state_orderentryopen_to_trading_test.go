@@ -6,9 +6,9 @@ import (
 	"testing"
 )
 
-func Test_OrderBook_State_NoTrading_Trading_Limit(t *testing.T) {
+func Test_OrderBook_State_OpenOrderEntry_Trading_Limit(t *testing.T) {
 	ins := instrument.MakeInstrument(inst, "ABV Investments")
-	bk := MakeOrderBook(ins, OrderBookEventTypeNoTrading)
+	bk := MakeOrderBook(ins, OrderBookEventTypeOpenOrderEntry)
 	assert.AssertEqualT(t, *bk.Instrument(), ins, "instrument same")
 
 	e1, _ := bk.NewOrder(makeLimitOrder("cli1", "id1", SideBuy, 100, 1.01))

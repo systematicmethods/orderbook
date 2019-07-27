@@ -66,7 +66,8 @@ func AssertNotNilT(t *testing.T, a interface{}, msg string) bool {
 
 func AssertNilT(t *testing.T, a interface{}, msg string) bool {
 	if reflect.TypeOf(a) != nil {
-		t.Errorf("%s '%v' not nil", msg, a)
+		_, file, line, _ := runtime.Caller(1)
+		t.Errorf("\n%s:%d: %s '%v' not nil", AssertionAt(file), line, msg, a)
 		return false
 	}
 	return true

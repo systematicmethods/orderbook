@@ -11,7 +11,8 @@ const (
 	OrderBookStateTradingClosed
 	OrderBookStateAuctionOpen
 	OrderBookStateAuctionClosed
-	OrderBookStateNoTrading
+	OrderBookStateOrderEntryOpen
+	OrderBookStateOrderEntryClosed
 	OrderBookStateUnknown
 )
 
@@ -20,7 +21,8 @@ const (
 	OrderBookEventTypeCloseTrading
 	OrderBookEventTypeOpenAuction
 	OrderBookEventTypeCloseAuction
-	OrderBookEventTypeNoTrading
+	OrderBookEventTypeOpenOrderEntry
+	OrderBookEventTypeCloseOrderEntry
 	OrderBookEventTypeUnknown
 )
 
@@ -29,7 +31,7 @@ var OrderBookEventTypeStateErrorFormat = "invalid event: %s in state %s"
 func OrderBookStateChange(orderBookState OrderBookState, eventType OrderBookEventType) (OrderBookState, error) {
 	switch eventType {
 	case OrderBookEventTypeOpenTrading:
-		if orderBookState == OrderBookStateNoTrading || orderBookState == OrderBookStateAuctionClosed {
+		if orderBookState == OrderBookStateOrderEntryOpen || orderBookState == OrderBookStateAuctionClosed {
 			return OrderBookStateTradingOpen, nil
 		}
 		return orderBookState, fmt.Errorf(OrderBookEventTypeStateErrorFormat, OrderBookEventTypeToString(eventType), OrderBookStateToString(orderBookState))
@@ -40,7 +42,7 @@ func OrderBookStateChange(orderBookState OrderBookState, eventType OrderBookEven
 		return orderBookState, fmt.Errorf(OrderBookEventTypeStateErrorFormat, OrderBookEventTypeToString(eventType), OrderBookStateToString(orderBookState))
 
 	case OrderBookEventTypeOpenAuction:
-		if orderBookState == OrderBookStateNoTrading || orderBookState == OrderBookStateTradingClosed {
+		if orderBookState == OrderBookStateOrderEntryOpen || orderBookState == OrderBookStateTradingClosed {
 			return OrderBookStateAuctionOpen, nil
 		}
 		return orderBookState, fmt.Errorf(OrderBookEventTypeStateErrorFormat, OrderBookEventTypeToString(eventType), OrderBookStateToString(orderBookState))
@@ -50,9 +52,14 @@ func OrderBookStateChange(orderBookState OrderBookState, eventType OrderBookEven
 		}
 		return orderBookState, fmt.Errorf(OrderBookEventTypeStateErrorFormat, OrderBookEventTypeToString(eventType), OrderBookStateToString(orderBookState))
 
-	case OrderBookEventTypeNoTrading:
+	case OrderBookEventTypeCloseOrderEntry:
 		if orderBookState == OrderBookStateTradingClosed || orderBookState == OrderBookStateAuctionClosed {
-			return OrderBookStateNoTrading, nil
+			return OrderBookStateOrderEntryClosed, nil
+		}
+		return orderBookState, fmt.Errorf(OrderBookEventTypeStateErrorFormat, OrderBookEventTypeToString(eventType), OrderBookStateToString(orderBookState))
+	case OrderBookEventTypeOpenOrderEntry:
+		if orderBookState == OrderBookStateOrderEntryClosed || orderBookState == OrderBookStateAuctionClosed {
+			return OrderBookStateOrderEntryOpen, nil
 		}
 		return orderBookState, fmt.Errorf(OrderBookEventTypeStateErrorFormat, OrderBookEventTypeToString(eventType), OrderBookStateToString(orderBookState))
 	}
@@ -69,8 +76,10 @@ func OrderBookEventTypeAs(eventType OrderBookEventType) OrderBookState {
 		return OrderBookStateAuctionOpen
 	case OrderBookEventTypeCloseAuction:
 		return OrderBookStateAuctionClosed
-	case OrderBookEventTypeNoTrading:
-		return OrderBookStateNoTrading
+	case OrderBookEventTypeOpenOrderEntry:
+		return OrderBookStateOrderEntryOpen
+	case OrderBookEventTypeCloseOrderEntry:
+		return OrderBookStateOrderEntryClosed
 	}
 	return OrderBookStateUnknown
 }
@@ -85,8 +94,10 @@ func OrderBookStateConv(thetype string) OrderBookState {
 		return OrderBookStateAuctionOpen
 	case "AuctionClosed":
 		return OrderBookStateAuctionClosed
-	case "NoTrading":
-		return OrderBookStateNoTrading
+	case "OrderEntryClosed":
+		return OrderBookStateOrderEntryClosed
+	case "OrderEntryOpen":
+		return OrderBookStateOrderEntryOpen
 	}
 	return OrderBookStateUnknown
 }
@@ -101,8 +112,10 @@ func OrderBookStateToString(thetype OrderBookState) string {
 		return "AuctionOpen"
 	case OrderBookStateAuctionClosed:
 		return "AuctionClosed"
-	case OrderBookStateNoTrading:
-		return "NoTrading"
+	case OrderBookStateOrderEntryClosed:
+		return "OrderEntryClosed"
+	case OrderBookStateOrderEntryOpen:
+		return "OrderEntryOpen"
 	}
 	return "OrderBookStateUnknown"
 }
@@ -117,8 +130,10 @@ func OrderBookEventTypeConv(thetype string) OrderBookEventType {
 		return OrderBookEventTypeOpenAuction
 	case "CloseAuction":
 		return OrderBookEventTypeCloseAuction
-	case "NoTrading":
-		return OrderBookEventTypeNoTrading
+	case "OpenOrderEntry":
+		return OrderBookEventTypeOpenOrderEntry
+	case "CloseOrderEntry":
+		return OrderBookEventTypeCloseOrderEntry
 	}
 	return OrderBookEventTypeUnknown
 }
@@ -133,8 +148,10 @@ func OrderBookEventTypeToString(thetype OrderBookEventType) string {
 		return "OpenAuction"
 	case OrderBookEventTypeCloseAuction:
 		return "CloseAuction"
-	case OrderBookEventTypeNoTrading:
-		return "NoTrading"
+	case OrderBookEventTypeOpenOrderEntry:
+		return "OpenOrderEntry"
+	case OrderBookEventTypeCloseOrderEntry:
+		return "CloseOrderEntry"
 	}
 	return "OrderBookEventTypeUnknown"
 }

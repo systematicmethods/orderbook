@@ -1,0 +1,25 @@
+@startuml
+skinparam defaultFontName Consolas
+
+
+class startEndSchedule {
+    startSchedule       time.Time
+    endSchedule         time.Time
+}
+
+class tradingSchedule {
+	orderEntry          startEndSchedule
+    openingAuction      startEndSchedule
+    trading             startEndSchedule
+    closingAuction      startEndSchedule
+}
+tradingSchedule *-- startEndSchedule
+
+
+class tradingCalendar {
+    map[Date]tradingSchedule
+}
+tradingCalendar *-- tradingSchedule
+
+
+@enduml

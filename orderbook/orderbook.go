@@ -57,6 +57,11 @@ type orderbook struct {
 
 func (b *orderbook) NewOrder(order NewOrderSingle) ([]ExecutionReport, error) {
 	execs := []ExecutionReport{}
+	if b.orderBookState == OrderBookStateOrderEntryClosed {
+		execs = append(execs, MakeRejectExecutionReport(order))
+		return execs, nil
+	}
+
 	if b.orderBookState == OrderBookStateTradingClosed && order.TimeInForce() != TimeInForceGoodForAuction {
 		execs = append(execs, MakeRejectExecutionReport(order))
 		return execs, nil
@@ -139,7 +144,7 @@ func cancelDayOrders(bs *buySellOrders) []ExecutionReport {
 }
 func (b *orderbook) NoTrading() error {
 	var err error
-	b.orderBookState, err = OrderBookStateChange(b.orderBookState, OrderBookEventTypeNoTrading)
+	b.orderBookState, err = OrderBookStateChange(b.orderBookState, OrderBookEventTypeCloseOrderEntry)
 	return err
 }
 

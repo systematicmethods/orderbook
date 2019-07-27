@@ -1,14 +1,24 @@
 @startuml
-[*] --> NoTrading
-NoTrading --> TradingOpen: OpenTrading
-NoTrading --> AuctionOpen: OpenAuction
-NoTrading --> NoTrading: NewOrder
-NoTrading --> NoTrading: NewAuctionOrder
-NoTrading --> NoTrading: Timer
-NoTrading: (NewOrder) Add limit orders to order book
-NoTrading: (NewOrder) Reject market orders
-NoTrading: (NewAuctionOrder) Add auction orders to auction book
-NoTrading: (Timer) Time to OpenTrading or OpenAuction
+[*] --> OrderEntryClosed
+OrderEntryClosed --> OrderEntryOpen : OpenOrderEntry
+OrderEntryClosed --> OrderEntryClosed: NewOrder
+OrderEntryClosed --> OrderEntryClosed: NewAuctionOrder
+OrderEntryClosed --> OrderEntryClosed: Timer
+OrderEntryClosed: (NewOrder) Reject orders
+OrderEntryClosed: (NewAuctionOrder) Reject orders
+OrderEntryClosed: (Timer) Time to OpenOrderEntry
+
+
+OrderEntryOpen --> TradingOpen: OpenTrading
+OrderEntryOpen --> AuctionOpen: OpenAuction
+OrderEntryOpen --> OrderEntryClosed: CloseOrderEntry
+OrderEntryOpen --> OrderEntryOpen: NewOrder
+OrderEntryOpen --> OrderEntryOpen: NewAuctionOrder
+OrderEntryOpen --> OrderEntryOpen: Timer
+OrderEntryOpen: (NewOrder) Add limit orders to order book
+OrderEntryOpen: (NewOrder) Reject market orders
+OrderEntryOpen: (NewAuctionOrder) Add auction orders to auction book
+OrderEntryOpen: (Timer) Time to OpenTrading or OpenAuction or CloseOrderEntry
 
 TradingOpen --> TradingOpen: NewOrder
 TradingOpen --> TradingOpen: NewAuctionOrder
@@ -29,7 +39,7 @@ AuctionOpen: (NewOrder) Add limit orders to auction book
 AuctionOpen: (NewOrder) Reject market orders
 AuctionOpen: (Timer) Time to close auction?
 
-AuctionClosed --> NoTrading: NoTrading
+AuctionClosed --> OrderEntryOpen: OpenOrderEntry
 AuctionClosed --> TradingOpen: OpenTrading
 AuctionClosed --> AuctionClosed: NewAuctionOrder
 AuctionClosed --> AuctionClosed: NewOrder
@@ -39,15 +49,15 @@ AuctionClosed: (NewOrder) Reject market orders
 AuctionClosed: Calculate closing price
 AuctionClosed: Match auction and book orders at close
 AuctionClosed: Cancel unfilled auction orders
-AuctionClosed: OpenTrading or NoTrading?
+AuctionClosed: OpenTrading or CloseOrderEntry?
 
-TradingClosed --> NoTrading: NoTrading
+TradingClosed --> OrderEntryOpen: OpenOrderEntry
 TradingClosed --> AuctionOpen: OpenAuction
 TradingClosed --> TradingClosed: NewAuctionOrder
 TradingClosed --> TradingClosed: NewOrder
 TradingClosed: (NewAuctionOrder) Add to auction book
 TradingClosed: (NewOrder) Reject Order
 TradingClosed: Cancel day orders
-TradingClosed: OpenAuction or NoTrading?
+TradingClosed: OpenAuction or CloseOrderEntry?
 
 @enduml
