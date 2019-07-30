@@ -1,15 +1,15 @@
 package orderbook
 
 import (
+	"github.com/andres-erbsen/clock"
 	"orderbook/assert"
 	"orderbook/instrument"
-	"runtime"
 	"testing"
 )
 
 func Test_OrderBook_RejectBuySellMarketOrder(t *testing.T) {
 	ins := instrument.MakeInstrument(inst, "ABV Investments")
-	bk := MakeOrderBook(ins, OrderBookEventTypeOpenTrading)
+	bk := MakeOrderBook(ins, OrderBookEventTypeOpenTrading, clock.NewMock())
 	assert.AssertEqualT(t, *bk.Instrument(), ins, "instrument same")
 
 	e1, _ := bk.NewOrder(makeMarketOrder("cli1", "id1", SideBuy, 100))
@@ -26,7 +26,7 @@ func Test_OrderBook_RejectBuySellMarketOrder(t *testing.T) {
 func Test_OrderBook_MatchBuyLimitSellMarket(t *testing.T) {
 	loglines()
 	ins := instrument.MakeInstrument(inst, "ABV Investments")
-	bk := MakeOrderBook(ins, OrderBookEventTypeOpenTrading)
+	bk := MakeOrderBook(ins, OrderBookEventTypeOpenTrading, clock.NewMock())
 
 	e1, _ := bk.NewOrder(makeLimitOrder("cli1", "id1", SideBuy, 101, 1.00))
 	e2, _ := bk.NewOrder(makeMarketOrder("cli2", "id2", SideSell, 100))
@@ -43,26 +43,9 @@ func Test_OrderBook_MatchBuyLimitSellMarket(t *testing.T) {
 	//printExecs(e2)
 }
 
-func containsExec(t *testing.T, execs []ExecutionReport, clientID string, clOrdID string, status OrdStatus, msg string, lastq int64, lastp float64) {
-	var found = 0
-	for _, v := range execs {
-		if v.ClientID() == clientID &&
-			v.ClOrdID() == clOrdID &&
-			v.OrdStatus() == status &&
-			v.LastPrice() == lastp &&
-			v.LastQty() == lastq {
-			found++
-		}
-	}
-	if found == 0 {
-		_, file, line, _ := runtime.Caller(1)
-		t.Errorf("\n%s:%d: not found %s %s:%s %v %d %f", assert.AssertionAt(file), line, msg, clientID, clOrdID, status, lastq, lastp)
-	}
-}
-
 func Test_OrderBook_MatchSellLimitBuyMarket(t *testing.T) {
 	ins := instrument.MakeInstrument(inst, "ABV Investments")
-	bk := MakeOrderBook(ins, OrderBookEventTypeOpenTrading)
+	bk := MakeOrderBook(ins, OrderBookEventTypeOpenTrading, clock.NewMock())
 
 	e1, _ := bk.NewOrder(makeLimitOrder("cli1", "id1", SideSell, 101, 1.00))
 	e2, _ := bk.NewOrder(makeMarketOrder("cli2", "id2", SideBuy, 100))
@@ -81,7 +64,7 @@ func Test_OrderBook_MatchSellLimitBuyMarket(t *testing.T) {
 
 func Test_OrderBook_MatchBuyLimitSellMarketLeaves(t *testing.T) {
 	ins := instrument.MakeInstrument(inst, "ABV Investments")
-	bk := MakeOrderBook(ins, OrderBookEventTypeOpenTrading)
+	bk := MakeOrderBook(ins, OrderBookEventTypeOpenTrading, clock.NewMock())
 
 	e1, _ := bk.NewOrder(makeLimitOrder("cli1", "id1", SideBuy, 101, 1.00))
 	e2, _ := bk.NewOrder(makeMarketOrder("cli2", "id2", SideSell, 105))
@@ -100,7 +83,7 @@ func Test_OrderBook_MatchBuyLimitSellMarketLeaves(t *testing.T) {
 
 func Test_OrderBook_MatchSellLimitBuyMarketLeaves(t *testing.T) {
 	ins := instrument.MakeInstrument(inst, "ABV Investments")
-	bk := MakeOrderBook(ins, OrderBookEventTypeOpenTrading)
+	bk := MakeOrderBook(ins, OrderBookEventTypeOpenTrading, clock.NewMock())
 
 	e1, _ := bk.NewOrder(makeLimitOrder("cli1", "id1", SideSell, 101, 1.00))
 	e2, _ := bk.NewOrder(makeMarketOrder("cli2", "id2", SideBuy, 105))

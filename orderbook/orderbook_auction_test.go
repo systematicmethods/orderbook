@@ -1,6 +1,7 @@
 package orderbook
 
 import (
+	clock "github.com/andres-erbsen/clock"
 	"orderbook/assert"
 	"orderbook/instrument"
 	"testing"
@@ -8,7 +9,7 @@ import (
 
 func Test_OrderBook_Auction_AddBuySellOrder(t *testing.T) {
 	ins := instrument.MakeInstrument(inst, "ABV Investments")
-	bk := MakeOrderBook(ins, OrderBookEventTypeOpenAuction)
+	bk := MakeOrderBook(ins, OrderBookEventTypeOpenAuction, clock.NewMock())
 	assert.AssertEqualT(t, *bk.Instrument(), ins, "instrument same")
 
 	e1, _ := bk.NewOrder(makeAuctionLimitOrder("cli1", "id1", SideBuy, 100, 1.01))
@@ -24,7 +25,7 @@ func Test_OrderBook_Auction_AddBuySellOrder(t *testing.T) {
 
 func Test_OrderBook_Auction_MatchBuySellOrder(t *testing.T) {
 	ins := instrument.MakeInstrument(inst, "ABV Investments")
-	bk := MakeOrderBook(ins, OrderBookEventTypeOpenAuction)
+	bk := MakeOrderBook(ins, OrderBookEventTypeOpenAuction, clock.NewMock())
 
 	e10, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id2", SideBuy, 100, 1.01))
 	e11, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id3", SideBuy, 100, 1.01))
@@ -64,7 +65,7 @@ func Test_OrderBook_Auction_MatchBuySellOrder(t *testing.T) {
 
 func Test_OrderBook_Auction_MatchSellBuyOrder(t *testing.T) {
 	ins := instrument.MakeInstrument(inst, "ABV Investments")
-	bk := MakeOrderBook(ins, OrderBookEventTypeOpenAuction)
+	bk := MakeOrderBook(ins, OrderBookEventTypeOpenAuction, clock.NewMock())
 
 	e10, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id2", SideSell, 100, 1.00))
 	e11, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id3", SideSell, 100, 1.00))
@@ -104,7 +105,7 @@ func Test_OrderBook_Auction_MatchSellBuyOrder(t *testing.T) {
 
 func Test_OrderBook_Auction_MatchSellBuyOrderPlaceDuringTrading(t *testing.T) {
 	ins := instrument.MakeInstrument(inst, "ABV Investments")
-	bk := MakeOrderBook(ins, OrderBookEventTypeOpenOrderEntry)
+	bk := MakeOrderBook(ins, OrderBookEventTypeOpenOrderEntry, clock.NewMock())
 
 	e10, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id2", SideSell, 100, 1.00))
 	e11, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id3", SideSell, 100, 1.00))

@@ -1,16 +1,21 @@
 package orderbook
 
 import (
+	"fmt"
+	"github.com/andres-erbsen/clock"
 	"github.com/google/uuid"
 	"orderbook/instrument"
 	"time"
 )
+
+//"github.com/andres-erbsen/clock""
 
 type OrderBook interface {
 	Instrument() *instrument.Instrument
 
 	NewOrder(order NewOrderSingle) ([]ExecutionReport, error)
 	CancelOrder(order OrderCancelRequest) (ExecutionReport, error)
+	Tick(time time.Time) ([]ExecutionReport, error)
 
 	OpenTrading() ([]ExecutionReport, error)
 	CloseTrading() ([]ExecutionReport, error)
@@ -29,7 +34,7 @@ type OrderBook interface {
 	SellAuctionOrders() []OrderState
 }
 
-func MakeOrderBook(instrument instrument.Instrument, orderBookEvent OrderBookEventType) OrderBook {
+func MakeOrderBook(instrument instrument.Instrument, orderBookEvent OrderBookEventType, clock clock.Clock) OrderBook {
 	b := orderbook{instrument: &instrument}
 	b.buyOrders = NewOrderList(HighToLow)
 	b.sellOrders = NewOrderList(HighToLow)
@@ -38,6 +43,7 @@ func MakeOrderBook(instrument instrument.Instrument, orderBookEvent OrderBookEve
 	b.auctionOrders.buyOrders = NewOrderList(HighToLow)
 	b.auctionOrders.sellOrders = NewOrderList(HighToLow)
 	b.orderBookState = OrderBookEventTypeAs(orderBookEvent)
+	b.clock = clock
 	return OrderBook(&b)
 }
 
@@ -53,6 +59,7 @@ type orderbook struct {
 	buyOrders      OrderList
 	sellOrders     OrderList
 	orderBookState OrderBookState
+	clock          clock.Clock
 }
 
 func (b *orderbook) NewOrder(order NewOrderSingle) ([]ExecutionReport, error) {
@@ -73,7 +80,7 @@ func (b *orderbook) NewOrder(order NewOrderSingle) ([]ExecutionReport, error) {
 	}
 
 	if order.TimeInForce() == TimeInForceGoodForAuction {
-		return addNewOrder(order, &b.auctionOrders)
+		return addNewOrder(order, &b.auctionOrders, b.clock)
 	}
 
 	if b.orderBookState != OrderBookStateTradingOpen {
@@ -81,7 +88,7 @@ func (b *orderbook) NewOrder(order NewOrderSingle) ([]ExecutionReport, error) {
 			execs = append(execs, MakeRejectExecutionReport(order))
 			return execs, nil
 		}
-		return addNewOrder(order, &b.obOrders)
+		return addNewOrder(order, &b.obOrders, b.clock)
 	}
 
 	// reject market orders if there are no limit orders
@@ -99,8 +106,38 @@ func (b *orderbook) NewOrder(order NewOrderSingle) ([]ExecutionReport, error) {
 		}
 	}
 
-	execs, err := matchOrderOnBook(order, &b.obOrders)
+	execs, err := matchOrderOnBook(order, &b.obOrders, b.clock)
 	return execs, err
+}
+
+func cancelOrderByFn(ol OrderList, time time.Time, fn func(order OrderState, t time.Time) bool) []ExecutionReport {
+	execs := []ExecutionReport{}
+	orders := []OrderState{}
+
+	for iter := ol.iterator(); iter.Next() == true; {
+		order := iter.Value().(OrderState)
+		fmt.Printf("testing %v and %v %v\n", time, order.ExpireOn(), order.ClOrdID())
+		if fn(order, time) {
+			orders = append(orders, order)
+			exec := MakeRestateOrderExecutionReport(order)
+			execs = append(execs, exec)
+		}
+	}
+
+	for _, v := range orders {
+		fmt.Printf("removing %v\n", v)
+		ol.RemoveByID(v.OrderID())
+	}
+	return execs
+}
+
+func (b *orderbook) Tick(tm time.Time) ([]ExecutionReport, error) {
+	fn := func(order OrderState, t time.Time) bool {
+		return order.TimeInForce() == TimeInForceGoodForTime && !t.Before(order.ExpireOn())
+	}
+	execs := cancelOrderByFn(b.obOrders.buyOrders, tm, fn)
+	execs = append(execs, cancelOrderByFn(b.obOrders.sellOrders, tm, fn)...)
+	return execs, nil
 }
 
 func (b *orderbook) OpenTrading() ([]ExecutionReport, error) {
@@ -117,31 +154,20 @@ func (b *orderbook) CloseTrading() ([]ExecutionReport, error) {
 	var err error
 	b.orderBookState, err = OrderBookStateChange(b.orderBookState, OrderBookEventTypeCloseTrading)
 	if err == nil {
-		return cancelDayOrders(&b.obOrders), nil
+		return cancelDayOrders(&b.obOrders, b.clock), nil
 	}
 	return nil, err
 }
 
-func cancelDayOrders(bs *buySellOrders) []ExecutionReport {
-	execs := []ExecutionReport{}
-	for iter := bs.buyOrders.iterator(); iter.Next() == true; {
-		order := iter.Value().(OrderState)
-		if order.TimeInForce() == TimeInForceDay {
-			bs.buyOrders.RemoveByID(order.OrderID())
-			exec := MakeRestateOrderExecutionReport(order)
-			execs = append(execs, exec)
-		}
+func cancelDayOrders(bs *buySellOrders, clock clock.Clock) []ExecutionReport {
+	fn := func(order OrderState, t time.Time) bool {
+		return order.TimeInForce() == TimeInForceDay
 	}
-	for iter := bs.sellOrders.iterator(); iter.Next() == true; {
-		order := iter.Value().(OrderState)
-		if order.TimeInForce() == TimeInForceDay {
-			bs.sellOrders.RemoveByID(order.OrderID())
-			exec := MakeRestateOrderExecutionReport(order)
-			execs = append(execs, exec)
-		}
-	}
+	execs := cancelOrderByFn(bs.buyOrders, clock.Now(), fn)
+	execs = append(execs, cancelOrderByFn(bs.sellOrders, clock.Now(), fn)...)
 	return execs
 }
+
 func (b *orderbook) NoTrading() error {
 	var err error
 	b.orderBookState, err = OrderBookStateChange(b.orderBookState, OrderBookEventTypeCloseOrderEntry)
@@ -184,10 +210,10 @@ func cancelOrders(bs *buySellOrders) []ExecutionReport {
 	return execs
 }
 
-func addNewOrder(order NewOrderSingle, bs *buySellOrders) ([]ExecutionReport, error) {
+func addNewOrder(order NewOrderSingle, bs *buySellOrders, clock clock.Clock) ([]ExecutionReport, error) {
 	execs := []ExecutionReport{}
 	var err error
-	neworder := NewOrder(order, newID(uuid.NewUUID()), time.Now())
+	neworder := NewOrder(order, newID(uuid.NewUUID()), clock.Now())
 	execs = append(execs, MakeNewOrderAckExecutionReport(neworder))
 	if order.Side() == SideBuy {
 		err = bs.buyOrders.Add(neworder)
@@ -197,11 +223,11 @@ func addNewOrder(order NewOrderSingle, bs *buySellOrders) ([]ExecutionReport, er
 	return execs, err
 }
 
-func matchOrderOnBook(order NewOrderSingle, bs *buySellOrders) ([]ExecutionReport, error) {
+func matchOrderOnBook(order NewOrderSingle, bs *buySellOrders, clock clock.Clock) ([]ExecutionReport, error) {
 	var err error
 	execs := []ExecutionReport{}
 
-	neworder := NewOrder(order, newID(uuid.NewUUID()), time.Now())
+	neworder := NewOrder(order, newID(uuid.NewUUID()), clock.Now())
 	execs = append(execs, MakeNewOrderAckExecutionReport(neworder))
 	filledBookSellOrders := []OrderState{}
 	filledBookBuyOrders := []OrderState{}

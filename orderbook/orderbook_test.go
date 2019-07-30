@@ -2,85 +2,31 @@ package orderbook
 
 import (
 	"fmt"
+	"github.com/andres-erbsen/clock"
 	"orderbook/assert"
-	"orderbook/instrument"
+	"runtime"
 	"testing"
 	"time"
 )
 
 const inst = "ABV"
 
-func Test_OrderBook_AddBuySellOrder(t *testing.T) {
-	ins := instrument.MakeInstrument(inst, "ABV Investments")
-	bk := MakeOrderBook(ins, OrderBookEventTypeOpenTrading)
-	assert.AssertEqualT(t, *bk.Instrument(), ins, "instrument same")
-
-	e1, _ := bk.NewOrder(makeLimitOrder("cli1", "id1", SideBuy, 100, 1.01))
-	e2, _ := bk.NewOrder(makeLimitOrder("cl12", "id2", SideSell, 101, 1.03))
-
-	assert.AssertEqualT(t, 1, len(e1), "e1 empty")
-	assert.AssertEqualT(t, 1, len(e2), "e2 empty")
-	assert.AssertEqualT(t, bk.BuySize(), 1, "buy size should be 1")
-	assert.AssertEqualT(t, bk.SellSize(), 1, "sell size should be 1")
-	assert.AssertEqualT(t, e1[0].ClOrdID(), "id1", "same clord")
-	assert.AssertEqualT(t, e2[0].ClOrdID(), "id2", "same clord")
-	assert.AssertEqualT(t, e1[0].InstrumentID(), inst, "same instrument")
-	assert.AssertEqualT(t, e2[0].InstrumentID(), inst, "same instrument")
+func makeMockClock(hour, min, sec int) *clock.Mock {
+	clock := clock.NewMock()
+	clock.Set(makeTime(hour, min, sec))
+	return clock
 }
 
-func Test_OrderBook_MatchBuySellOrder(t *testing.T) {
-	ins := instrument.MakeInstrument(inst, "ABV Investments")
-	bk := MakeOrderBook(ins, OrderBookEventTypeOpenTrading)
-
-	e10, _ := bk.NewOrder(makeLimitOrder("cli2", "id2", SideBuy, 100, 1.01))
-	e11, _ := bk.NewOrder(makeLimitOrder("cli2", "id3", SideBuy, 100, 1.01))
-	e12, _ := bk.NewOrder(makeLimitOrder("cli2", "id4", SideBuy, 100, 1.01))
-	e13, _ := bk.NewOrder(makeLimitOrder("cli2", "id5", SideBuy, 100, 1.01))
-	e2, _ := bk.NewOrder(makeLimitOrder("cli1", "id1", SideSell, 101, 1.00))
-
-	//printExecs(e2)
-
-	assert.AssertEqualT(t, 1, len(e10), "e10 1")
-	assert.AssertEqualT(t, 1, len(e11), "e11 1")
-	assert.AssertEqualT(t, 1, len(e12), "e12 1")
-	assert.AssertEqualT(t, 1, len(e13), "e13 1")
-	assert.AssertEqualT(t, 5, len(e2), "e2 5")
-	containsExec(t, e2, "cli1", "id1", OrdStatusNew, "new order", 0, 0)
-	containsExec(t, e2, "cli1", "id1", OrdStatusPartiallyFilled, "partially filled order", 100, 1.01)
-	containsExec(t, e2, "cli1", "id1", OrdStatusFilled, "filled order", 1, 1.01)
-	containsExec(t, e2, "cli2", "id2", OrdStatusFilled, "filled bk order", 100, 1.01)
-	containsExec(t, e2, "cli2", "id3", OrdStatusPartiallyFilled, "partially filled bk order", 1, 1.01)
-
-}
-
-func Test_OrderBook_MatchSellBuyOrder(t *testing.T) {
-	ins := instrument.MakeInstrument(inst, "ABV Investments")
-	bk := MakeOrderBook(ins, OrderBookEventTypeOpenTrading)
-
-	e10, _ := bk.NewOrder(makeLimitOrder("cli1", "id2", SideSell, 100, 1.00))
-	e11, _ := bk.NewOrder(makeLimitOrder("cli1", "id3", SideSell, 100, 1.00))
-	e12, _ := bk.NewOrder(makeLimitOrder("cli1", "id4", SideSell, 100, 1.00))
-	e13, _ := bk.NewOrder(makeLimitOrder("cli1", "id5", SideSell, 100, 1.00))
-	e2, _ := bk.NewOrder(makeLimitOrder("cli2", "id1", SideBuy, 101, 1.01))
-
-	assert.AssertEqualT(t, 1, len(e10), "e10 empty")
-	assert.AssertEqualT(t, 1, len(e11), "e11 empty")
-	assert.AssertEqualT(t, 1, len(e12), "e12 empty")
-	assert.AssertEqualT(t, 1, len(e13), "e13 empty")
-	assert.AssertEqualT(t, 5, len(e2), "e2 empty")
-
-	//printExecs(e2)
-
-	containsExec(t, e2, "cli2", "id1", OrdStatusNew, "new order", 0, 0)
-	containsExec(t, e2, "cli2", "id1", OrdStatusPartiallyFilled, "partially filled order", 100, 1.00)
-	containsExec(t, e2, "cli2", "id1", OrdStatusFilled, "filled order", 1, 1.00)
-	containsExec(t, e2, "cli1", "id2", OrdStatusFilled, "filled bk order", 100, 1.00)
-	containsExec(t, e2, "cli1", "id3", OrdStatusPartiallyFilled, "partially filled bk order", 1, 1.00)
-}
-
-func makeLimitOrder(clientID string, clOrdID string, side Side, qty int64, price float64) NewOrderSingle {
+func makeTime(hour, min, sec int) time.Time {
 	loc, _ := time.LoadLocation("UTC")
-	dt := time.Date(2019, 10, 11, 11, 11, 1, 0, loc)
+	return time.Date(2019, 10, 11, hour, min, sec, 0, loc)
+}
+func makeLongTime(hour, min, sec int) time.Time {
+	loc, _ := time.LoadLocation("UTC")
+	return time.Date(2019, 10, 21, hour, min, sec, 0, loc)
+}
+func makeLimitOrder(clientID string, clOrdID string, side Side, qty int64, price float64) NewOrderSingle {
+	dt := makeTime(11, 11, 1)
 	return MakeNewOrderLimit(
 		inst,
 		clientID,
@@ -93,9 +39,8 @@ func makeLimitOrder(clientID string, clOrdID string, side Side, qty int64, price
 		dt)
 }
 
-func makeLimitOrderDay(clientID string, clOrdID string, side Side, qty int64, price float64) NewOrderSingle {
-	loc, _ := time.LoadLocation("UTC")
-	dt := time.Date(2019, 10, 11, 11, 11, 1, 0, loc)
+func makeLimitOrderTimeInForce(clientID string, clOrdID string, side Side, qty int64, price float64, timeInForce TimeInForce, expireOn time.Time) NewOrderSingle {
+	dt := makeTime(11, 11, 1)
 	return MakeNewOrderLimit(
 		inst,
 		clientID,
@@ -103,14 +48,13 @@ func makeLimitOrderDay(clientID string, clOrdID string, side Side, qty int64, pr
 		side,
 		price,
 		qty,
-		TimeInForceDay,
-		dt,
+		timeInForce,
+		expireOn,
 		dt)
 }
 
 func makeAuctionLimitOrder(clientID string, clOrdID string, side Side, qty int64, price float64) NewOrderSingle {
-	loc, _ := time.LoadLocation("UTC")
-	dt := time.Date(2019, 10, 11, 11, 11, 1, 0, loc)
+	dt := makeTime(11, 11, 1)
 	return MakeNewOrderLimit(
 		inst,
 		clientID,
@@ -124,8 +68,7 @@ func makeAuctionLimitOrder(clientID string, clOrdID string, side Side, qty int64
 }
 
 func makeMarketOrder(clientID string, clOrdID string, side Side, qty int64) NewOrderSingle {
-	loc, _ := time.LoadLocation("UTC")
-	dt := time.Date(2019, 10, 11, 11, 11, 1, 0, loc)
+	dt := makeTime(11, 11, 1)
 	return MakeNewOrderMarket(
 		inst,
 		clientID,
@@ -140,5 +83,22 @@ func makeMarketOrder(clientID string, clOrdID string, side Side, qty int64) NewO
 func printExecs(execs []ExecutionReport) {
 	for i, s := range execs {
 		fmt.Printf("e%d %v\n", i, s)
+	}
+}
+
+func containsExec(t *testing.T, execs []ExecutionReport, clientID string, clOrdID string, status OrdStatus, msg string, lastq int64, lastp float64) {
+	var found = 0
+	for _, v := range execs {
+		if v.ClientID() == clientID &&
+			v.ClOrdID() == clOrdID &&
+			v.OrdStatus() == status &&
+			v.LastPrice() == lastp &&
+			v.LastQty() == lastq {
+			found++
+		}
+	}
+	if found == 0 {
+		_, file, line, _ := runtime.Caller(1)
+		t.Errorf("\n%s:%d: not found %s %s:%s %v %d %f", assert.AssertionAt(file), line, msg, clientID, clOrdID, status, lastq, lastp)
 	}
 }

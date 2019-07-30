@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/DATA-DOG/godog"
 	"github.com/DATA-DOG/godog/gherkin"
+	"github.com/andres-erbsen/clock"
 	"github.com/google/uuid"
 	"github.com/rdumont/assistdog"
 	"orderbook/assert"
@@ -59,7 +60,7 @@ func FeatureContextLimitOrder(s *godog.Suite) {
 
 func anOrderBookForInstrument(inst string) error {
 	ins := instrument.MakeInstrument(inst, inst+"name")
-	bk = orderbook.MakeOrderBook(ins, orderbook.OrderBookEventTypeOpenTrading)
+	bk = orderbook.MakeOrderBook(ins, orderbook.OrderBookEventTypeOpenTrading, clock.NewMock())
 	execs = []orderbook.ExecutionReport{}
 	orders = []orderbook.OrderEvent{}
 	return nil

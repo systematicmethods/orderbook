@@ -1,6 +1,7 @@
 package orderbook
 
 import (
+	clock "github.com/andres-erbsen/clock"
 	"orderbook/assert"
 	"orderbook/instrument"
 	"testing"
@@ -8,7 +9,7 @@ import (
 
 func Test_OrderBook_State_AuctionOpen_Closed(t *testing.T) {
 	ins := instrument.MakeInstrument(inst, "ABV Investments")
-	bk := MakeOrderBook(ins, OrderBookEventTypeOpenAuction)
+	bk := MakeOrderBook(ins, OrderBookEventTypeOpenAuction, clock.NewMock())
 	assert.AssertEqualT(t, *bk.Instrument(), ins, "instrument same")
 
 	e1, _ := bk.NewOrder(makeAuctionLimitOrder("cli1", "id1", SideBuy, 100, 1.01))

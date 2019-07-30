@@ -7,7 +7,7 @@ OrderEntryClosed --> OrderEntryClosed: Timer
 OrderEntryClosed: (NewOrder) Reject orders
 OrderEntryClosed: (NewAuctionOrder) Reject orders
 OrderEntryClosed: (Timer) Time to OpenOrderEntry
-
+OrderEntryClosed: (Timer) Cancel expired orders
 
 OrderEntryOpen --> TradingOpen: OpenTrading
 OrderEntryOpen --> AuctionOpen: OpenAuction
@@ -19,15 +19,17 @@ OrderEntryOpen: (NewOrder) Add limit orders to order book
 OrderEntryOpen: (NewOrder) Reject market orders
 OrderEntryOpen: (NewAuctionOrder) Add auction orders to auction book
 OrderEntryOpen: (Timer) Time to OpenTrading or OpenAuction or CloseOrderEntry
+OrderEntryOpen: (Timer) Cancel expired orders?
 
 TradingOpen --> TradingOpen: NewOrder
 TradingOpen --> TradingOpen: NewAuctionOrder
 TradingOpen --> TradingOpen: Timer
 TradingOpen --> TradingClosed: CloseTrading
+TradingOpen: (OpenTrading) Cancel expired orders
 TradingOpen: (OpenTrading) Match all orders on book
 TradingOpen: (NewOrder) Match order
 TradingOpen: (NewAuctionOrder) Add to auction book
-TradingOpen: (Timer) Cancel expired orders
+TradingOpen: (Timer) Cancel expired orders?
 TradingOpen: (Timer) Time to close Trading?
 
 AuctionOpen --> AuctionClosed: CloseAuction
@@ -38,6 +40,7 @@ AuctionOpen: (NewAuctionOrder) Add to auction book
 AuctionOpen: (NewOrder) Add limit orders to auction book
 AuctionOpen: (NewOrder) Reject market orders
 AuctionOpen: (Timer) Time to close auction?
+AuctionOpen: (Timer) Cancel expired orders?
 
 AuctionClosed --> OrderEntryOpen: OpenOrderEntry
 AuctionClosed --> TradingOpen: OpenTrading

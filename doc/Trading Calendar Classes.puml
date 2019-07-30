@@ -1,25 +1,31 @@
 @startuml
 skinparam defaultFontName Consolas
 
+' There maybe one or more of these in a given day
+enum TradingScheduleType {
+    OrderEntry
+    Auction
+    Trading
+}
 
-class startEndSchedule {
+class TradingSchedule {
     startSchedule       time.Time
     endSchedule         time.Time
+    tradingScheduleType TradingScheduleType
+    InTradingSchedule(time.Time)  bool
 }
 
-class tradingSchedule {
-	orderEntry          startEndSchedule
-    openingAuction      startEndSchedule
-    trading             startEndSchedule
-    closingAuction      startEndSchedule
+class DayTradingSchedule {
+	tradingSchedule     []TradingSchedule
+    InTradingSchedule(time.Time)  TradingSchedule
 }
-tradingSchedule *-- startEndSchedule
+DayTradingSchedule *-- TradingSchedule
 
 
-class tradingCalendar {
-    map[Date]tradingSchedule
+class TradingCalendar {
+    calendar map[Date]DayTradingSchedule
 }
-tradingCalendar *-- tradingSchedule
+TradingCalendar *-- DayTradingSchedule
 
 
 @enduml
