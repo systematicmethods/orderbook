@@ -54,3 +54,25 @@ func Test_OrderBook_State_AuctionClosed_Auction(t *testing.T) {
 	containsExec(t, e1, "cli1", "id1", OrdStatusRejected, "rejected", 0, 0)
 	containsExec(t, e2, "cli2", "id2", OrdStatusRejected, "rejected", 0, 0)
 }
+
+func Test_OrderBook_State_AuctionClosed_Limit_FoK_IoC(t *testing.T) {
+	ins := instrument.MakeInstrument(inst, "ABV Investments")
+	bk := MakeOrderBook(ins, OrderBookEventTypeCloseAuction, clock.NewMock())
+	assert.AssertEqualT(t, *bk.Instrument(), ins, "instrument same")
+
+	e1, _ := bk.NewOrder(makeLimitOrderTimeInForce("cli1", "id1", SideBuy, 100, 1.01, TimeInForceFillOrKill, makeTime(11, 11, 1)))
+	e2, _ := bk.NewOrder(makeLimitOrderTimeInForce("cli1", "id2", SideBuy, 100, 1.01, TimeInForceImmediateOrCancel, makeTime(11, 11, 1)))
+	e3, _ := bk.NewOrder(makeLimitOrderTimeInForce("cli2", "id3", SideSell, 101, 1.01, TimeInForceFillOrKill, makeTime(11, 11, 1)))
+	e4, _ := bk.NewOrder(makeLimitOrderTimeInForce("cli2", "id4", SideSell, 101, 1.01, TimeInForceImmediateOrCancel, makeTime(11, 11, 1)))
+
+	assert.AssertEqualT(t, 1, len(e1), "e1 empty")
+	assert.AssertEqualT(t, 1, len(e2), "e2 empty")
+	assert.AssertEqualT(t, 1, len(e3), "e2 empty")
+	assert.AssertEqualT(t, 1, len(e4), "e2 empty")
+	assert.AssertEqualT(t, 0, bk.BuySize(), "buy size should be 0")
+	assert.AssertEqualT(t, 0, bk.SellSize(), "sell size should be 0")
+	containsExec(t, e1, "cli1", "id1", OrdStatusRejected, "rejected", 0, 0)
+	containsExec(t, e2, "cli1", "id2", OrdStatusRejected, "rejected", 0, 0)
+	containsExec(t, e3, "cli2", "id3", OrdStatusRejected, "rejected", 0, 0)
+	containsExec(t, e4, "cli2", "id4", OrdStatusRejected, "rejected", 0, 0)
+}
