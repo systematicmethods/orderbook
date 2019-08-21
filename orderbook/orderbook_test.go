@@ -12,19 +12,21 @@ import (
 const inst = "ABV"
 
 func makeMockClock(hour, min, sec int) *clock.Mock {
-	clock := clock.NewMock()
-	clock.Set(makeTime(hour, min, sec))
-	return clock
+	aclock := clock.NewMock()
+	aclock.Set(makeTime(hour, min, sec))
+	return aclock
 }
 
 func makeTime(hour, min, sec int) time.Time {
 	loc, _ := time.LoadLocation("UTC")
 	return time.Date(2019, 10, 11, hour, min, sec, 0, loc)
 }
+
 func makeLongTime(hour, min, sec int) time.Time {
 	loc, _ := time.LoadLocation("UTC")
 	return time.Date(2019, 10, 21, hour, min, sec, 0, loc)
 }
+
 func makeLimitOrder(clientID string, clOrdID string, side Side, qty int64, price float64) NewOrderSingle {
 	dt := makeTime(11, 11, 1)
 	return MakeNewOrderLimit(
@@ -37,6 +39,20 @@ func makeLimitOrder(clientID string, clOrdID string, side Side, qty int64, price
 		TimeInForceGoodTillCancel,
 		dt,
 		dt)
+}
+
+func makeLimitOrderWithClock(clientID string, clOrdID string, side Side, qty int64, price float64, clock clock.Clock) NewOrderSingle {
+	dt := makeTime(11, 11, 1)
+	return MakeNewOrderLimit(
+		inst,
+		clientID,
+		clOrdID,
+		side,
+		price,
+		qty,
+		TimeInForceGoodTillCancel,
+		dt,
+		clock.Now())
 }
 
 func makeLimitOrderTimeInForce(clientID string, clOrdID string, side Side, qty int64, price float64, timeInForce TimeInForce, expireOn time.Time) NewOrderSingle {

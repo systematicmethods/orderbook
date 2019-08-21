@@ -156,6 +156,7 @@ func (b *orderbook) OpenTrading() ([]ExecutionReport, error) {
 	b.orderBookState, err = OrderBookStateChange(b.orderBookState, OrderBookEventTypeOpenTrading)
 	if err == nil {
 		ex = matchOrder(&b.obOrders)
+		//ex = matchOrderReverseSellBuy(&b.obOrders)
 	}
 	return ex, err
 }
@@ -341,6 +342,8 @@ func matchOrder(bs *buySellOrders) []ExecutionReport {
 					price = sellorder.Price()
 				} else if sellorder.OrderType() == OrderTypeMarket {
 					price = buyorder.Price()
+				} else if sellorder.TransactTime().Before(buyorder.TransactTime()) {
+					price = sellorder.Price()
 				} else {
 					price = buyorder.Price()
 				}
@@ -350,7 +353,7 @@ func matchOrder(bs *buySellOrders) []ExecutionReport {
 					}
 					execs = append(execs, MakeFillExecutionReport(buyorder, price, toFill))
 					if sellorder.fill(toFill) {
-						filledBookSellOrders = append(filledBookSellOrders, buyorder)
+						filledBookSellOrders = append(filledBookSellOrders, sellorder)
 					}
 					execs = append(execs, MakeFillExecutionReport(sellorder, price, toFill))
 				} else {
@@ -366,6 +369,57 @@ func matchOrder(bs *buySellOrders) []ExecutionReport {
 	}
 	for _, v := range filledBookSellOrders {
 		bs.sellOrders.RemoveByID(v.OrderID())
+	}
+
+	return execs
+}
+
+func matchOrderReverseSellBuy(bs *buySellOrders) []ExecutionReport {
+	//fmt.Printf("match order: sell %d buy %d \n", bs.sellOrders.Size(), bs.buyOrders.Size())
+	execs := []ExecutionReport{}
+	filledBookbuy2orders := []OrderState{}
+	filledBooksell1orders := []OrderState{}
+
+	for iter1 := bs.sellOrders.iterator(); iter1.Next() == true; {
+		sell1order := iter1.Value().(OrderState)
+		//fmt.Printf("buy order %s %f %d\n", SideToString(sell1order.Side()), sell1order.Price(), sell1order.LeavesQty())
+		for iter2 := bs.buyOrders.iterator(); iter2.Next() == true; {
+			buy2order := iter2.Value().(OrderState)
+			//fmt.Printf("buy \nbuy2order %v \nbuyorder %v\n", buy2order, buyorder)
+			if (sell1order.OrderType() == OrderTypeMarket || buy2order.OrderType() == OrderTypeMarket) || sell1order.Price() <= buy2order.Price() {
+				toFill := min(buy2order.LeavesQty(), sell1order.LeavesQty())
+				var price float64
+				if sell1order.OrderType() == OrderTypeMarket {
+					price = buy2order.Price()
+				} else if buy2order.OrderType() == OrderTypeMarket {
+					price = sell1order.Price()
+				} else if sell1order.TransactTime().Before(buy2order.TransactTime()) {
+					price = sell1order.Price()
+				} else {
+					price = buy2order.Price()
+				}
+				if toFill > 0 {
+					if sell1order.fill(toFill) {
+						filledBooksell1orders = append(filledBooksell1orders, sell1order)
+					}
+					execs = append(execs, MakeFillExecutionReport(sell1order, price, toFill))
+					if buy2order.fill(toFill) {
+						filledBookbuy2orders = append(filledBookbuy2orders, buy2order)
+					}
+					execs = append(execs, MakeFillExecutionReport(buy2order, price, toFill))
+				} else {
+					break
+				}
+			}
+			//fmt.Printf("After loop buy \nbuy2order %v \nsell1order %v\n", buy2order, sell1order)
+		}
+	}
+	// remove filled orders
+	for _, v := range filledBooksell1orders {
+		bs.sellOrders.RemoveByID(v.OrderID())
+	}
+	for _, v := range filledBookbuy2orders {
+		bs.buyOrders.RemoveByID(v.OrderID())
 	}
 
 	return execs
