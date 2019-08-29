@@ -10,7 +10,7 @@ import (
 func Test_AddThreeOrdersSellSide(m *testing.T) {
 	pt := threeOrdersTwoAtSamePrice(m, LowToHigh)
 
-	if pti := pt.Top(); pti.OrderID() != "orderid2" {
+	if pti, err := pt.Top(); err != nil && pti.OrderID() != "orderid2" {
 		m.Error("Price Error", pti.Price(), pti.OrderID())
 	}
 
@@ -27,7 +27,7 @@ func Test_AddThreeOrdersSellSide(m *testing.T) {
 func Test_AddThreeOrdersBuySide(m *testing.T) {
 	pt := threeOrdersTwoAtSamePrice(m, HighToLow)
 
-	if pti := pt.Top(); pti.OrderID() != "orderid1" {
+	if pti, err := pt.Top(); err != nil && pti.OrderID() != "orderid1" {
 		m.Error("Price Error", pti.Price(), pti.OrderID())
 	}
 
@@ -61,7 +61,7 @@ func Test_AddThreeOrdersBuySideGeneratedTime(m *testing.T) {
 		}
 	}
 
-	if pti := pt.Top(); pti.OrderID() != "orderid1" {
+	if pti, err := pt.Top(); err != nil && pti.OrderID() != "orderid1" {
 		m.Error("Price Error", pti.Price(), pti.OrderID())
 	}
 

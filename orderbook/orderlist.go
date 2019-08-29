@@ -1,6 +1,7 @@
 package orderbook
 
 import (
+	"errors"
 	"github.com/emirpasic/gods/sets/treeset"
 )
 
@@ -13,7 +14,7 @@ const (
 
 type OrderList interface {
 	Add(order OrderState) error
-	Top() OrderState
+	Top() (OrderState, error)
 	RemoveByID(orderid string) bool
 	FindByID(orderid string) OrderState
 	FindByClOrdID(clOrdID string) OrderState
@@ -66,10 +67,14 @@ func (p *orderlist) RemoveByID(orderid string) bool {
 	return false
 }
 
-func (p *orderlist) Top() OrderState {
+func (p *orderlist) Top() (OrderState, error) {
+	if p.orderedlist.Size() == 0 {
+		var ret OrderState
+		return ret, errors.New("No orders")
+	}
 	var iter = p.orderedlist.Iterator()
 	iter.Next()
-	return iter.Value().(OrderState)
+	return iter.Value().(OrderState), nil
 }
 
 func (p *orderlist) Orders() []OrderState {

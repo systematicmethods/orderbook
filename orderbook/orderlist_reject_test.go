@@ -17,7 +17,7 @@ func Test_RejectDuplicateOrderID(m *testing.T) {
 		m.Error("Size not 3 was", pt.Size())
 	}
 
-	if pti := pt.Top(); pti.Price() != 1.1 && pti.OrderID() == "orderid2" {
+	if pti, err := pt.Top(); err != nil && pti.Price() != 1.1 && pti.OrderID() == "orderid2" {
 		m.Error("Price Error", pti.Price())
 	}
 

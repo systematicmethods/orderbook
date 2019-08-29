@@ -7,8 +7,6 @@ import (
 	"time"
 )
 
-//"github.com/andres-erbsen/clock""
-
 type OrderBook interface {
 	Instrument() *instrument.Instrument
 
@@ -31,16 +29,17 @@ type OrderBook interface {
 	SellAuctionSize() int
 	BuyAuctionOrders() []OrderState
 	SellAuctionOrders() []OrderState
+
+	orderBookOrders() *buySellOrders
+	auctionBookOrders() *buySellOrders
 }
 
 func MakeOrderBook(instrument instrument.Instrument, orderBookEvent OrderBookEventType, clock clock.Clock) OrderBook {
 	b := orderbook{instrument: &instrument}
-	b.buyOrders = NewOrderList(HighToLow)
-	b.sellOrders = NewOrderList(HighToLow)
 	b.obOrders.buyOrders = NewOrderList(HighToLow)
-	b.obOrders.sellOrders = NewOrderList(HighToLow)
+	b.obOrders.sellOrders = NewOrderList(LowToHigh)
 	b.auctionOrders.buyOrders = NewOrderList(HighToLow)
-	b.auctionOrders.sellOrders = NewOrderList(HighToLow)
+	b.auctionOrders.sellOrders = NewOrderList(LowToHigh)
 	b.orderBookState = OrderBookEventTypeAs(orderBookEvent)
 	b.clock = clock
 	return OrderBook(&b)
@@ -55,8 +54,6 @@ type orderbook struct {
 	instrument     *instrument.Instrument
 	obOrders       buySellOrders
 	auctionOrders  buySellOrders
-	buyOrders      OrderList
-	sellOrders     OrderList
 	orderBookState OrderBookState
 	clock          clock.Clock
 }
@@ -170,6 +167,10 @@ func (b *orderbook) CloseTrading() ([]ExecutionReport, error) {
 	return nil, err
 }
 
+func (b *orderbook) orderBookOrders() *buySellOrders {
+	return &b.obOrders
+}
+
 func cancelDayOrders(bs *buySellOrders, clock clock.Clock) []ExecutionReport {
 	fn := func(order OrderState, t time.Time) bool {
 		return order.TimeInForce() == TimeInForceDay
@@ -183,25 +184,6 @@ func (b *orderbook) NoTrading() error {
 	var err error
 	b.orderBookState, err = OrderBookStateChange(b.orderBookState, OrderBookEventTypeCloseOrderEntry)
 	return err
-}
-
-func (b *orderbook) OpenAuction() error {
-	var err error
-	b.orderBookState, err = OrderBookStateChange(b.orderBookState, OrderBookEventTypeOpenAuction)
-	return err
-}
-
-func (b *orderbook) CloseAuction() ([]ExecutionReport, error) {
-	var err error
-	execs := []ExecutionReport{}
-	b.orderBookState, err = OrderBookStateChange(b.orderBookState, OrderBookEventTypeCloseAuction)
-	if err == nil {
-		var exs []ExecutionReport = matchOrdersOnBook(&b.auctionOrders)
-		execs = append(execs, exs...)
-		exs = cancelOrders(&b.auctionOrders)
-		execs = append(execs, exs...)
-	}
-	return execs, err
 }
 
 func cancelOrders(bs *buySellOrders) []ExecutionReport {
@@ -425,46 +407,6 @@ func matchOrderReverseSellBuy(bs *buySellOrders) []ExecutionReport {
 	return execs
 }
 
-func matchOrdersOnBook(bs *buySellOrders) []ExecutionReport {
-	//fmt.Printf("match order: sell %d buy %d \n", b.sellOrders.Size(), b.buyOrders.Size())
-	execs := []ExecutionReport{}
-	for buyiter := bs.buyOrders.iterator(); buyiter.Next() == true; {
-		buyorder := buyiter.Value().(OrderState)
-		if buyorder.Side() == SideBuy && bs.sellOrders.Size() > 0 {
-			//fmt.Printf("buy order %s %f %d\n", SideToString(buyorder.Side()), buyorder.Price(), buyorder.LeavesQty())
-			for selliter := bs.sellOrders.iterator(); selliter.Next() == true; {
-				sellorder := selliter.Value().(OrderState)
-				//fmt.Printf("buy \nsellorder %v \nbuyorder %v\n", sellorder, buyorder)
-				if (buyorder.OrderType() == OrderTypeMarket || sellorder.OrderType() == OrderTypeMarket) || buyorder.Price() >= sellorder.Price() {
-					toFill := min(sellorder.LeavesQty(), buyorder.LeavesQty())
-					var price float64
-					if buyorder.OrderType() == OrderTypeMarket {
-						price = sellorder.Price()
-					} else if sellorder.OrderType() == OrderTypeMarket {
-						price = buyorder.Price()
-					} else {
-						price = buyorder.Price()
-					}
-					if toFill > 0 {
-						if buyorder.fill(toFill) {
-							bs.buyOrders.RemoveByID(buyorder.OrderID())
-						}
-						execs = append(execs, MakeFillExecutionReport(buyorder, price, toFill))
-						if sellorder.fill(toFill) {
-							bs.sellOrders.RemoveByID(sellorder.OrderID())
-						}
-						execs = append(execs, MakeFillExecutionReport(sellorder, price, toFill))
-					} else {
-						break
-					}
-				}
-				//fmt.Printf("After loop buy \nsellorder %v \nbuyorder %v\n", sellorder, buyorder)
-			}
-		}
-	}
-	return execs
-}
-
 func (b *orderbook) CancelOrder(order OrderCancelRequest) (ExecutionReport, error) {
 	var exec, err = cancelOrder(order, &b.obOrders)
 	// try auction orders if not found on orderbook
@@ -510,22 +452,6 @@ func (b *orderbook) BuyOrders() []OrderState {
 
 func (b *orderbook) SellOrders() []OrderState {
 	return b.obOrders.sellOrders.Orders()
-}
-
-func (b *orderbook) BuyAuctionSize() int {
-	return b.auctionOrders.buyOrders.Size()
-}
-
-func (b *orderbook) SellAuctionSize() int {
-	return b.auctionOrders.sellOrders.Size()
-}
-
-func (b *orderbook) BuyAuctionOrders() []OrderState {
-	return b.auctionOrders.buyOrders.Orders()
-}
-
-func (b *orderbook) SellAuctionOrders() []OrderState {
-	return b.auctionOrders.sellOrders.Orders()
 }
 
 func newID(uuid uuid.UUID, _ error) uuid.UUID {
