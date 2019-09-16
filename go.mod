@@ -6,6 +6,7 @@ require (
 	github.com/emirpasic/gods v1.12.0
 	github.com/google/uuid v1.1.1
 	github.com/rdumont/assistdog v0.0.0-20171107191847-c91d7a54538c
+	github.com/shopspring/decimal v0.0.0-20190905144223-a36b5d85f337
 	github.com/stretchr/testify v1.3.0 // indirect
 
 )

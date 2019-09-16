@@ -1,6 +1,23 @@
 package orderbook
 
-import "math"
+import (
+	"fmt"
+	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
+	"math"
+	"time"
+)
+
+type OrderBookAuction interface {
+	OpenAuction() error
+	CloseAuction() (execs []ExecutionReport, clearingPrice float64, clearingVol int64, err error)
+	BuyAuctionSize() int
+	SellAuctionSize() int
+	BuyAuctionOrders() []OrderState
+	SellAuctionOrders() []OrderState
+
+	auctionBookOrders() *buySellOrders
+}
 
 func (b *orderbook) OpenAuction() error {
 	var err error
@@ -20,17 +37,18 @@ func (b *orderbook) OpenAuction() error {
 	9	Fill orders to rounded auction price
 	10	Cancel remaining orders
 */
-func (b *orderbook) CloseAuction() ([]ExecutionReport, error) {
-	var err error
-	execs := []ExecutionReport{}
+func (b *orderbook) CloseAuction() (execs []ExecutionReport, clearingPrice float64, clearingVol int64, err error) {
+	execs = []ExecutionReport{}
+	// fillAuctionAtClearingPrice matchAuctionOrdersOnBook
 	b.orderBookState, err = OrderBookStateChange(b.orderBookState, OrderBookEventTypeCloseAuction)
 	if err == nil {
-		var exs = matchAuctionOrdersOnBook(&b.auctionOrders)
+		var exs []ExecutionReport
+		exs, clearingPrice, clearingVol, err = fillAuctionAtClearingPrice(&b.auctionOrders)
 		execs = append(execs, exs...)
 		exs = cancelOrders(&b.auctionOrders)
 		execs = append(execs, exs...)
 	}
-	return execs, err
+	return
 }
 
 func (b *orderbook) auctionBookOrders() *buySellOrders {
@@ -76,7 +94,7 @@ func matchAuctionOrdersOnBook(bs *buySellOrders) []ExecutionReport {
 				sellorder := selliter.Value().(OrderState)
 				//fmt.Printf("buy \nsellorder %v \nbuyorder %v\n", sellorder, buyorder)
 				if (buyorder.OrderType() == OrderTypeMarket || sellorder.OrderType() == OrderTypeMarket) || buyorder.Price() >= sellorder.Price() {
-					toFill := min(sellorder.LeavesQty(), buyorder.LeavesQty())
+					tofill := min(sellorder.LeavesQty(), buyorder.LeavesQty())
 					var price float64
 					if buyorder.OrderType() == OrderTypeMarket {
 						price = sellorder.Price()
@@ -85,15 +103,15 @@ func matchAuctionOrdersOnBook(bs *buySellOrders) []ExecutionReport {
 					} else {
 						price = buyorder.Price()
 					}
-					if toFill > 0 {
-						if buyorder.fill(toFill) {
+					if tofill > 0 {
+						if buyorder.fill(tofill) {
 							bs.buyOrders.RemoveByID(buyorder.OrderID())
 						}
-						execs = append(execs, MakeFillExecutionReport(buyorder, price, toFill))
-						if sellorder.fill(toFill) {
+						execs = append(execs, MakeFillExecutionReport(buyorder, price, tofill))
+						if sellorder.fill(tofill) {
 							bs.sellOrders.RemoveByID(sellorder.OrderID())
 						}
-						execs = append(execs, MakeFillExecutionReport(sellorder, price, toFill))
+						execs = append(execs, MakeFillExecutionReport(sellorder, price, tofill))
 					} else {
 						break
 					}
@@ -105,7 +123,104 @@ func matchAuctionOrdersOnBook(bs *buySellOrders) []ExecutionReport {
 	return execs
 }
 
-func volMaxPriceMinPriceMax(bs *buySellOrders) (maxvol int64, pricemin float64, pricemax float64, err error) {
+func calcClearingPrice(bk *buySellOrders) (clearingPrice float64, vol int64, err error) {
+	vol, _, _, err = volBetweenPriceMinAndPriceMax(bk)
+	sellvwwap := sellVWAP(bk.sellOrders, vol)
+	buyvwap := buyVWAP(bk.buyOrders, vol)
+	return (sellvwwap + buyvwap) / 2.0, vol, err
+}
+
+func roundup(num decimal.Decimal, places int32) decimal.Decimal {
+	// math.Floor(x*100)/100
+	factor := decimal.NewFromFloat32(10).Pow(decimal.New(int64(places), 0))
+	return num.Mul(factor).Ceil().Div(factor)
+}
+
+func rounddown(num decimal.Decimal, places int32) decimal.Decimal {
+	// math.Floor(x*100)/100
+	factor := decimal.NewFromFloat32(10).Pow(decimal.New(int64(places), 0))
+	return num.Mul(factor).Floor().Div(factor)
+}
+
+func calcClearingPricePercentages(clearingPrice float64) (buypercent float64, sellpercent float64, lower float64, upper float64) {
+	cp := decimal.NewFromFloat(clearingPrice)
+	upper, _ = roundup(cp, 2).Float64()
+	lowerd := rounddown(cp, 2)
+	lower, _ = rounddown(cp, 2).Float64()
+	percentd := cp.Sub(lowerd).Mul(decimal.NewFromFloat32(10).Pow(decimal.New(int64(2), 0)))
+	sellpercent, _ = percentd.Float64()
+	buypercent, _ = decimal.New(1, 0).Sub(percentd).Float64()
+	return
+}
+
+func fillAuctionAtClearingPrice(bk *buySellOrders) (execs []ExecutionReport, clearingPrice float64, clearingVol int64, err error) {
+	match := func(neworder OrderState, bookorder OrderState) bool {
+		return neworder.LeavesQty() >= 0
+	}
+	execs = []ExecutionReport{}
+	clearingPrice, clearingVol, err = calcClearingPrice(bk)
+	buyperc, sellperc, lowerprice, upperprice := calcClearingPricePercentages(clearingPrice)
+	fmt.Printf("percent buy %v sell %v lower %v upper %v clear vol %d price %v \n", buyperc, sellperc, lowerprice, upperprice, clearingVol, clearingPrice)
+
+	filledSellBookOrders := []OrderState{}
+
+	buyorder := makeMarketOrderForAuction(clearingVol, clearingPrice, SideBuy)
+	for iter := bk.sellOrders.iterator(); iter.Next() == true; {
+		bookorder := iter.Value().(OrderState)
+		if match(buyorder, bookorder) && bookorder.Price() <= buyorder.Price() {
+			tofill := min(bookorder.LeavesQty(), buyorder.LeavesQty())
+			if tofill > 0 {
+				tofillbuy := int64(float64(tofill) * buyperc)
+				tofillsell := tofill - tofillbuy
+				fmt.Printf("sell orders: perc %v to fill %d buy fill %d, sell fill %d\n", buyperc, tofill, tofillbuy, tofillsell)
+				buyorder.fill(tofillbuy)
+				bookorder.fill(tofillbuy)
+				execs = append(execs, MakeFillExecutionReport(bookorder, lowerprice, tofillbuy))
+				buyorder.fill(tofillsell)
+				bookorder.fill(tofillsell)
+				execs = append(execs, MakeFillExecutionReport(bookorder, upperprice, tofillsell))
+				if bookorder.LeavesQty() == 0 {
+					filledSellBookOrders = append(filledSellBookOrders, bookorder)
+				}
+			}
+		}
+	}
+
+	filledBuyBookOrders := []OrderState{}
+
+	sellorder := makeMarketOrderForAuction(clearingVol, clearingPrice, SideSell)
+	for iter := bk.buyOrders.iterator(); iter.Next() == true; {
+		bookorder := iter.Value().(OrderState)
+		if match(sellorder, bookorder) && bookorder.Price() >= sellorder.Price() {
+			tofill := min(bookorder.LeavesQty(), sellorder.LeavesQty())
+			if tofill > 0 {
+				tofillbuy := int64(float64(tofill) * buyperc)
+				tofillsell := tofill - tofillbuy
+				fmt.Printf("buy orders: perc %v to fill %d buy fill %d, sell fill %d\n", buyperc, tofill, tofillbuy, tofillsell)
+				sellorder.fill(tofillbuy)
+				bookorder.fill(tofillbuy)
+				execs = append(execs, MakeFillExecutionReport(bookorder, lowerprice, tofillbuy))
+				sellorder.fill(tofillsell)
+				bookorder.fill(tofillsell)
+				execs = append(execs, MakeFillExecutionReport(bookorder, upperprice, tofillsell))
+				if bookorder.LeavesQty() == 0 {
+					filledBuyBookOrders = append(filledBuyBookOrders, bookorder)
+				}
+			}
+		}
+	}
+
+	for _, v := range filledSellBookOrders {
+		bk.sellOrders.RemoveByID(v.OrderID())
+	}
+	for _, v := range filledBuyBookOrders {
+		bk.buyOrders.RemoveByID(v.OrderID())
+	}
+	//printExecs2(execs)
+	return
+}
+
+func volBetweenPriceMinAndPriceMax(bs *buySellOrders) (maxvol int64, pricemin float64, pricemax float64, err error) {
 	pricemin, volb, errmin := minPriceOnBuySide(bs)
 	pricemax, vols, errmax := maxPriceOnSellSide(bs)
 	maxvol = min(volb, vols)
@@ -118,12 +233,52 @@ func volMaxPriceMinPriceMax(bs *buySellOrders) (maxvol int64, pricemin float64, 
 	return
 }
 
-func buyVWAP(orders OrderList, maxvol int64) (vwap float64) {
-	for iter := orders.iterator(); iter.Next() == true; {
-
+func calcVWAP(orders OrderList, maxvol int64, match func(OrderState, OrderState) bool) (vwap float64) {
+	copyOfOrders := orders.orderList()
+	execs := []ExecutionReport{}
+	order := makeMarketOrderForAuction(maxvol, 0, SideBuy)
+	for iter := copyOfOrders.iterator(); iter.Next() == true; {
+		bookorder := iter.Value().(OrderState)
+		if match(order, bookorder) {
+			tofill := min(bookorder.LeavesQty(), order.LeavesQty())
+			price := bookorder.Price()
+			if tofill > 0 {
+				order.fill(tofill)
+				execs = append(execs, MakeFillExecutionReport(order, price, tofill))
+			}
+		}
 	}
-	return
+	return cummulativeVwapCalc(execs, maxvol)
 }
+
+func cummulativeVwapCalc(execs []ExecutionReport, maxvol int64) float64 {
+	var priceXvol float64
+	for _, s := range execs {
+		priceXvol += s.LastPrice() * float64(s.LastQty()) / float64(maxvol)
+	}
+	return priceXvol
+}
+
+func buyVWAP(orders OrderList, maxvol int64) (vwap float64) {
+	matchBuy := func(neworder OrderState, bookorder OrderState) bool {
+		return (neworder.OrderType() == OrderTypeMarket || bookorder.OrderType() == OrderTypeMarket) || neworder.Price() >= bookorder.Price()
+	}
+	return calcVWAP(orders, maxvol, matchBuy)
+}
+
+func sellVWAP(orders OrderList, maxvol int64) (vwap float64) {
+	matchSell := func(neworder OrderState, bookorder OrderState) bool {
+		return (neworder.OrderType() == OrderTypeMarket || bookorder.OrderType() == OrderTypeMarket) || neworder.Price() <= bookorder.Price()
+	}
+	return calcVWAP(orders, maxvol, matchSell)
+}
+
+func printExecs2(execs []ExecutionReport) {
+	for i, s := range execs {
+		fmt.Printf("e%d %v\n", i, s)
+	}
+}
+
 func maxPriceOnSellSide(bs *buySellOrders) (price float64, vol int64, err error) {
 	price = math.NaN()
 	vol = 0
@@ -142,7 +297,7 @@ func maxPriceOnSellSide(bs *buySellOrders) (price float64, vol int64, err error)
 			//println("vol", vol)
 		}
 	}
-	println("ret vol", vol)
+	//println("ret vol", vol)
 	return
 }
 
@@ -163,4 +318,32 @@ func minPriceOnBuySide(bs *buySellOrders) (price float64, vol int64, err error) 
 		}
 	}
 	return
+}
+
+func makeMarketOrderForAuction(qty int64, price float64, side Side) OrderState {
+	loc, _ := time.LoadLocation("UTC")
+	dt := time.Date(2019, 10, 11, 11, 11, 1, 0, loc)
+	ordertype := OrderTypeMarket
+	if price != 0 {
+		ordertype = OrderTypeLimit
+	}
+	return MakeOrderState(
+		"",
+		"",
+		"",
+		side,
+		price,
+		qty,
+		ordertype,
+		TimeInForceGoodForAuction,
+		dt,
+		dt,
+		dt,
+		dt,
+		"",
+		uuid.New(),
+		qty,
+		0,
+		OrdStatusNew,
+	)
 }

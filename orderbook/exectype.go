@@ -44,6 +44,8 @@ func ExecTypeConv(thetype string) ExecType {
 		return ExecTypeDoneForDay
 	case "Expired":
 		return ExecTypeExpired
+	case "Restated":
+		return ExecTypeRestated
 	}
 	return ExecTypeUnknown
 }
@@ -64,6 +66,8 @@ func ExecTypeToString(thetype ExecType) string {
 		return "DoneForDay"
 	case ExecTypeExpired:
 		return "Expired"
+	case ExecTypeRestated:
+		return "Restated"
 	}
 	return "Unknown"
 }

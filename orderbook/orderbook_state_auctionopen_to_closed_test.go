@@ -22,8 +22,10 @@ func Test_OrderBook_State_AuctionOpen_Closed(t *testing.T) {
 	containsExec(t, e1, "cli1", "id1", OrdStatusNew, "new", 0, 0)
 	containsExec(t, e2, "cli2", "id2", OrdStatusNew, "new", 0, 0)
 
-	e3, _ := bk.CloseAuction()
+	e3, clrPrice, clrVol, _ := bk.CloseAuction()
 	assert.AssertEqualT(t, 3, len(e3), "e3 1")
+	assert.AssertEqualT(t, 0, clrPrice, "clearing price")
+	assert.AssertEqualT(t, 0, clrVol, "clearing vol")
 	containsExec(t, e3, "cli1", "id1", OrdStatusFilled, "fill", 100, 1.01)
 	containsExec(t, e3, "cli2", "id2", OrdStatusPartiallyFilled, "part fill", 100, 1.01)
 	containsExec(t, e3, "cli2", "id2", OrdStatusCanceled, "cancel", 0, 0)

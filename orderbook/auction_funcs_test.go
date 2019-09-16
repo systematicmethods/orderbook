@@ -9,38 +9,74 @@ import (
 
 func Test_OrderBook_Auction_MinOrder(t *testing.T) {
 	bk := makeOrderBook_for_OrderBook_Auction(t)
-	priceb, volb, errb := minPriceOnBuySide(bk.auctionBookOrders())
+	priceb, volb, err := minPriceOnBuySide(bk.auctionBookOrders())
 	assert.AssertEqualT(t, 1.02, priceb, "min price")
 	assert.AssertEqualTint64(t, 640, volb, "buy vol")
-	assert.AssertEqualT(t, nil, errb, "min err")
+	assert.AssertEqualT(t, nil, err, "min err")
 }
 
 func Test_OrderBook_Auction_MaxOrder(t *testing.T) {
 	bk := makeOrderBook_for_OrderBook_Auction(t)
-	prices, vols, errs := maxPriceOnSellSide(bk.auctionBookOrders())
+	prices, vols, err := maxPriceOnSellSide(bk.auctionBookOrders())
 	assert.AssertEqualT(t, 1.05, prices, "max sell price")
 	assert.AssertEqualTint64(t, 780, vols, "buy vol")
-	assert.AssertEqualT(t, nil, errs, "min err")
+	assert.AssertEqualT(t, nil, err, "min err")
 }
 
 func Test_OrderBook_Auction_MaxrderVolume(t *testing.T) {
 	bk := makeOrderBook_for_OrderBook_Auction(t)
-	vol, pricemin, pricemax, errs := volMaxPriceMinPriceMax(bk.auctionBookOrders())
+	vol, pricemin, pricemax, err := volBetweenPriceMinAndPriceMax(bk.auctionBookOrders())
 	assert.AssertEqualT(t, 1.02, pricemin, "min price")
 	assert.AssertEqualT(t, 1.05, pricemax, "max price")
 	assert.AssertEqualTint64(t, 640, vol, "buy vol")
-	assert.AssertEqualT(t, nil, errs, "min err")
+	assert.AssertEqualT(t, nil, err, "min err")
 }
 
 func Test_OrderBook_Auction_BuyVWAP(t *testing.T) {
 	bk := makeOrderBook_for_OrderBook_Auction(t)
-	vol, pricemin, pricemax, errs := volMaxPriceMinPriceMax(bk.auctionBookOrders())
-	vwapp := buyVWAP(bk.auctionBookOrders().buyOrders, vol)
-	assert.AssertEqualT(t, 1.0347, vwapp, "min price")
-	assert.AssertEqualT(t, 1.02, pricemin, "min price")
-	assert.AssertEqualT(t, 1.05, pricemax, "max price")
+	vol, _, _, err := volBetweenPriceMinAndPriceMax(bk.auctionBookOrders())
+	price := buyVWAP(bk.auctionBookOrders().buyOrders, vol)
+	assert.AssertEqualTfloat64(t, 1.03469, price, 0.0001, "min price")
 	assert.AssertEqualTint64(t, 640, vol, "buy vol")
-	assert.AssertEqualT(t, nil, errs, "min err")
+	assert.AssertEqualT(t, nil, err, "min err")
+}
+
+func Test_OrderBook_Auction_SellVWAP(t *testing.T) {
+	bk := makeOrderBook_for_OrderBook_Auction(t)
+	vol, _, _, err := volBetweenPriceMinAndPriceMax(bk.auctionBookOrders())
+	price := sellVWAP(bk.auctionBookOrders().sellOrders, vol)
+	assert.AssertEqualTfloat64(t, 1.01984, price, 0.0001, "min price")
+	assert.AssertEqualTint64(t, 640, vol, "buy vol")
+	assert.AssertEqualT(t, nil, err, "min err")
+}
+
+func Test_OrderBook_Auction_ClearingPrice(t *testing.T) {
+	bk := makeOrderBook_for_OrderBook_Auction(t)
+	price, _, err := calcClearingPrice(bk.auctionBookOrders())
+	assert.AssertEqualTfloat64(t, 1.02726, price, 0.0001, "min price")
+	assert.AssertEqualT(t, nil, err, "min err")
+}
+
+func Test_OrderBook_Auction_ClearingPricePercentages(t *testing.T) {
+	bk := makeOrderBook_for_OrderBook_Auction(t)
+	price, _, _ := calcClearingPrice(bk.auctionBookOrders())
+	assert.AssertEqualTfloat64(t, 1.02726, price, 0.0001, "min price")
+	buyperc, sellperc, lower, upper := calcClearingPricePercentages(price)
+	println("lower upper", lower, upper)
+	assert.AssertEqualTfloat64(t, 1.02, lower, 0.001, "lower price")
+	assert.AssertEqualTfloat64(t, 1.03, upper, 0.001, "lower price")
+	assert.AssertEqualTfloat64(t, 0.2734375, buyperc, 0.0000001, "but perc price")
+	assert.AssertEqualTfloat64(t, 0.7265625, sellperc, 0.0000001, "sell perc price")
+}
+
+func Test_OrderBook_Auction_FillOrders(t *testing.T) {
+	bk := makeOrderBook_for_OrderBook_Auction(t)
+	execs, _, _, err := fillAuctionAtClearingPrice(bk.auctionBookOrders())
+	assert.AssertEqualT(t, 16, len(execs), "16")
+	assert.AssertEqualT(t, nil, err, "min err")
+	//assert.Fail(t, "add more tests")
+	printExecs(execs)
+
 }
 
 /*

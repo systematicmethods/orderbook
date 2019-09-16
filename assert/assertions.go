@@ -2,6 +2,7 @@ package assert
 
 import (
 	"fmt"
+	"math"
 	"reflect"
 	"runtime"
 	"strings"
@@ -17,10 +18,24 @@ func AssertEqualT(t *testing.T, ex interface{}, ac interface{}, msg string) bool
 	return true
 }
 
+func Fail(t *testing.T, msg string) {
+	_, file, line, _ := runtime.Caller(1)
+	t.Errorf("\n%s:%d: %s", AssertionAt(file), line, msg)
+}
+
 func AssertEqualTint64(t *testing.T, ex int64, ac int64, msg string) bool {
 	if ex != ac {
 		_, file, line, _ := runtime.Caller(1)
 		t.Errorf("\n%s:%d: %s expected '%v' actual '%v'", AssertionAt(file), line, msg, ex, ac)
+		return false
+	}
+	return true
+}
+
+func AssertEqualTfloat64(t *testing.T, ex float64, ac float64, epsilon float64, msg string) bool {
+	if (math.Abs(ex - ac)) > epsilon {
+		_, file, line, _ := runtime.Caller(1)
+		t.Errorf("\n%s:%d: %s expected '%v' actual '%v' abs '%v'", AssertionAt(file), line, msg, ex, ac, math.Abs(ex-ac))
 		return false
 	}
 	return true

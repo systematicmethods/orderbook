@@ -3,6 +3,7 @@ package orderbook
 import (
 	"github.com/andres-erbsen/clock"
 	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 	"orderbook/instrument"
 	"time"
 )
@@ -17,21 +18,15 @@ type OrderBook interface {
 	OpenTrading() ([]ExecutionReport, error)
 	CloseTrading() ([]ExecutionReport, error)
 	NoTrading() error
-	OpenAuction() error
-	CloseAuction() ([]ExecutionReport, error)
 
 	BuySize() int
 	SellSize() int
 	BuyOrders() []OrderState
 	SellOrders() []OrderState
 
-	BuyAuctionSize() int
-	SellAuctionSize() int
-	BuyAuctionOrders() []OrderState
-	SellAuctionOrders() []OrderState
-
 	orderBookOrders() *buySellOrders
-	auctionBookOrders() *buySellOrders
+
+	OrderBookAuction
 }
 
 func MakeOrderBook(instrument instrument.Instrument, orderBookEvent OrderBookEventType, clock clock.Clock) OrderBook {
@@ -42,6 +37,8 @@ func MakeOrderBook(instrument instrument.Instrument, orderBookEvent OrderBookEve
 	b.auctionOrders.sellOrders = NewOrderList(LowToHigh)
 	b.orderBookState = OrderBookEventTypeAs(orderBookEvent)
 	b.clock = clock
+	priced, _ := decimal.NewFromString("1.23")
+	priced.Add(priced)
 	return OrderBook(&b)
 }
 
@@ -60,6 +57,7 @@ type orderbook struct {
 
 func (b *orderbook) NewOrder(order NewOrderSingle) ([]ExecutionReport, error) {
 	execs := []ExecutionReport{}
+
 	if b.orderBookState == OrderBookStateOrderEntryClosed {
 		execs = append(execs, MakeRejectExecutionReport(order))
 		return execs, nil

@@ -21,6 +21,7 @@ type OrderList interface {
 	FindByPrice(price float64) []OrderState
 	Orders() []OrderState
 	Size() int
+	orderList() orderlist
 
 	iterator() treeset.Iterator
 }
@@ -84,6 +85,10 @@ func (p *orderlist) Orders() []OrderState {
 		orders = append(orders, order)
 	}
 	return orders
+}
+
+func (p *orderlist) orderList() orderlist {
+	return *p
 }
 
 func (p *orderlist) FindByID(orderid string) OrderState {
