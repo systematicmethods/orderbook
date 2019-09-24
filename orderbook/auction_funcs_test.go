@@ -2,6 +2,7 @@ package orderbook
 
 import (
 	"github.com/andres-erbsen/clock"
+	"github.com/shopspring/decimal"
 	"orderbook/assert"
 	"orderbook/instrument"
 	"testing"
@@ -13,6 +14,11 @@ func Test_OrderBook_Auction_MinOrder(t *testing.T) {
 	assert.AssertEqualT(t, 1.02, priceb, "min price")
 	assert.AssertEqualTint64(t, 640, volb, "buy vol")
 	assert.AssertEqualT(t, nil, err, "min err")
+	state := newAuctionCloseCalculator()
+	err = state.minPriceBuy(bk.auctionBookOrders())
+	assert.AssertTrueT(t, decimal.NewFromFloat(1.02).Equal(state.state().buy.pricelimit), "min price")
+	assert.AssertEqualTint64(t, 640, state.state().buy.vol, "buy vol")
+	assert.AssertEqualT(t, nil, err, "min err")
 }
 
 func Test_OrderBook_Auction_MaxOrder(t *testing.T) {
@@ -20,6 +26,11 @@ func Test_OrderBook_Auction_MaxOrder(t *testing.T) {
 	prices, vols, err := maxPriceOnSellSide(bk.auctionBookOrders())
 	assert.AssertEqualT(t, 1.05, prices, "max sell price")
 	assert.AssertEqualTint64(t, 780, vols, "buy vol")
+	assert.AssertEqualT(t, nil, err, "min err")
+	state := newAuctionCloseCalculator()
+	err = state.maxPriceSell(bk.auctionBookOrders())
+	assert.AssertTrueT(t, decimal.NewFromFloat(1.05).Equal(state.state().sell.pricelimit), "min price")
+	assert.AssertEqualTint64(t, 780, state.state().sell.vol, "buy vol")
 	assert.AssertEqualT(t, nil, err, "min err")
 }
 
@@ -30,14 +41,26 @@ func Test_OrderBook_Auction_MaxrderVolume(t *testing.T) {
 	assert.AssertEqualT(t, 1.05, pricemax, "max price")
 	assert.AssertEqualTint64(t, 640, vol, "buy vol")
 	assert.AssertEqualT(t, nil, err, "min err")
+	state := newAuctionCloseCalculator()
+	err = state.volBetweenPriceMinAndPriceMax(bk.auctionBookOrders())
+	assert.AssertTrueT(t, decimal.NewFromFloat(1.02).Equal(state.state().buy.pricelimit), "min price")
+	assert.AssertTrueT(t, decimal.NewFromFloat(1.05).Equal(state.state().sell.pricelimit), "max price")
+	assert.AssertEqualTint64(t, 640, state.state().clearingvol, "buy vol")
+	assert.AssertEqualT(t, nil, err, "min err")
 }
 
 func Test_OrderBook_Auction_BuyVWAP(t *testing.T) {
 	bk := makeOrderBook_for_OrderBook_Auction(t)
 	vol, _, _, err := volBetweenPriceMinAndPriceMax(bk.auctionBookOrders())
 	price := buyVWAP(bk.auctionBookOrders().buyOrders, vol)
-	assert.AssertEqualTfloat64(t, 1.03469, price, 0.0001, "min price")
+	assert.AssertEqualTfloat64(t, 1.03469, price, 0.0001, "buy vwap price")
 	assert.AssertEqualTint64(t, 640, vol, "buy vol")
+	assert.AssertEqualT(t, nil, err, "min err")
+	state := newAuctionCloseCalculator()
+	state.buyVWAP(bk.auctionBookOrders().buyOrders, vol)
+	println("buy vwap ", state.state().buy.vwap.String())
+	assert.AssertEqualTdecimal(t, decimal.NewFromFloat(1.03469), state.state().buy.vwap, 0.0001, "buy vwap price")
+	assert.AssertEqualTint64(t, 640, state.state().clearingvol, "clearing vol")
 	assert.AssertEqualT(t, nil, err, "min err")
 }
 
@@ -45,8 +68,14 @@ func Test_OrderBook_Auction_SellVWAP(t *testing.T) {
 	bk := makeOrderBook_for_OrderBook_Auction(t)
 	vol, _, _, err := volBetweenPriceMinAndPriceMax(bk.auctionBookOrders())
 	price := sellVWAP(bk.auctionBookOrders().sellOrders, vol)
-	assert.AssertEqualTfloat64(t, 1.01984, price, 0.0001, "min price")
+	assert.AssertEqualTfloat64(t, 1.01984, price, 0.0001, "sell vwap price")
 	assert.AssertEqualTint64(t, 640, vol, "buy vol")
+	assert.AssertEqualT(t, nil, err, "min err")
+	state := newAuctionCloseCalculator()
+	state.sellVWAP(bk.auctionBookOrders().sellOrders, vol)
+	println("sell vwap ", state.state().sell.vwap.String())
+	assert.AssertEqualTdecimal(t, decimal.NewFromFloat(1.01984), state.state().sell.vwap, 0.0001, "sell vwap price")
+	assert.AssertEqualTint64(t, 640, state.state().clearingvol, "clearing vol")
 	assert.AssertEqualT(t, nil, err, "min err")
 }
 
@@ -55,6 +84,9 @@ func Test_OrderBook_Auction_ClearingPrice(t *testing.T) {
 	price, _, err := calcClearingPrice(bk.auctionBookOrders())
 	assert.AssertEqualTfloat64(t, 1.02726, price, 0.0001, "min price")
 	assert.AssertEqualT(t, nil, err, "min err")
+	state := newAuctionCloseCalculator()
+	state.calcClearingPrice(bk.auctionBookOrders())
+	assert.AssertEqualTdecimal(t, decimal.NewFromFloat(1.02726), state.state().midclearingprice, 0.0001, "mid clearing price")
 }
 
 func Test_OrderBook_Auction_ClearingPricePercentages(t *testing.T) {
@@ -62,21 +94,42 @@ func Test_OrderBook_Auction_ClearingPricePercentages(t *testing.T) {
 	price, _, _ := calcClearingPrice(bk.auctionBookOrders())
 	assert.AssertEqualTfloat64(t, 1.02726, price, 0.0001, "min price")
 	buyperc, sellperc, lower, upper := calcClearingPricePercentages(price)
-	println("lower upper", lower, upper)
-	assert.AssertEqualTfloat64(t, 1.02, lower, 0.001, "lower price")
-	assert.AssertEqualTfloat64(t, 1.03, upper, 0.001, "lower price")
-	assert.AssertEqualTfloat64(t, 0.2734375, buyperc, 0.0000001, "but perc price")
-	assert.AssertEqualTfloat64(t, 0.7265625, sellperc, 0.0000001, "sell perc price")
+	println("lower upper", lower.String(), upper.String())
+	toFloat := func(d decimal.Decimal) float64 {
+		ret, _ := d.Float64()
+		return ret
+	}
+	assert.AssertEqualTfloat64(t, 1.02, toFloat(lower), 0.001, "lower price")
+	assert.AssertEqualTfloat64(t, 1.03, toFloat(upper), 0.001, "lower price")
+	assert.AssertEqualTfloat64(t, 0.2734375, toFloat(buyperc), 0.0000001, "but perc price")
+	assert.AssertEqualTfloat64(t, 0.7265625, toFloat(sellperc), 0.0000001, "sell perc price")
+	state := newAuctionCloseCalculator()
+	state.calcClearingPrice(bk.auctionBookOrders())
+	state.calcClearingPricePercentages()
+	assert.AssertEqualTdecimal(t, decimal.NewFromFloat(1.02726), state.state().midclearingprice, 0.0001, "mid clearing price")
+	assert.AssertEqualTdecimal(t, decimal.NewFromFloat(1.02), state.state().sell.clearingprice, 0.001, "lower sell price")
+	assert.AssertEqualTdecimal(t, decimal.NewFromFloat(1.03), state.state().buy.clearingprice, 0.001, "lower buy price")
+	assert.AssertEqualTdecimal(t, decimal.NewFromFloat(0.2734375), state.state().buy.percent, 0.0000001, "buy perc price")
+	assert.AssertEqualTdecimal(t, decimal.NewFromFloat(0.7265625), state.state().sell.percent, 0.0000001, "sell perc price")
+
 }
 
-func Test_OrderBook_Auction_FillOrders(t *testing.T) {
+func Test_OrderBook_Auction_FillOrdersStateless(t *testing.T) {
 	bk := makeOrderBook_for_OrderBook_Auction(t)
 	execs, _, _, err := fillAuctionAtClearingPrice(bk.auctionBookOrders())
 	assert.AssertEqualT(t, 16, len(execs), "16")
 	assert.AssertEqualT(t, nil, err, "min err")
-	//assert.Fail(t, "add more tests")
+}
+
+func Test_OrderBook_Auction_FillOrdersWithState(t *testing.T) {
+	bk := makeOrderBook_for_OrderBook_Auction(t)
+	state := newAuctionCloseCalculator()
+	execs, err := state.fillAuctionAtClearingPrice(bk.auctionBookOrders())
+	assert.AssertEqualT(t, 44, len(execs), "44")
+	assert.AssertEqualT(t, nil, err, "min err")
 	printExecs(execs)
 
+	assert.Fail(t, "add more tests")
 }
 
 /*

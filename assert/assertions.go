@@ -2,6 +2,7 @@ package assert
 
 import (
 	"fmt"
+	"github.com/shopspring/decimal"
 	"math"
 	"reflect"
 	"runtime"
@@ -13,6 +14,15 @@ func AssertEqualT(t *testing.T, ex interface{}, ac interface{}, msg string) bool
 	if ex != ac {
 		_, file, line, _ := runtime.Caller(1)
 		t.Errorf("\n%s:%d: %s expected '%v' actual '%v'", AssertionAt(file), line, msg, ex, ac)
+		return false
+	}
+	return true
+}
+
+func AssertTrueT(t *testing.T, value bool, msg string) bool {
+	if !value {
+		_, file, line, _ := runtime.Caller(1)
+		t.Errorf("\n%s:%d: %s", AssertionAt(file), line, msg)
 		return false
 	}
 	return true
@@ -41,6 +51,14 @@ func AssertEqualTfloat64(t *testing.T, ex float64, ac float64, epsilon float64, 
 	return true
 }
 
+func AssertEqualTdecimal(t *testing.T, ex decimal.Decimal, ac decimal.Decimal, epsilon float64, msg string) bool {
+	if ex.Sub(ac).Abs().GreaterThan(decimal.NewFromFloat(epsilon)) {
+		_, file, line, _ := runtime.Caller(1)
+		t.Errorf("\n%s:%d: %s expected '%v' actual '%v' abs '%v'", AssertionAt(file), line, msg, ex, ac, ex.Sub(ac).Abs().String())
+		return false
+	}
+	return true
+}
 func AssertionAt(file string) string {
 	var short string
 	for i := len(file) - 1; i > 0; i-- {

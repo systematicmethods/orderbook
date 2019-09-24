@@ -46,8 +46,6 @@ func Test_OrderBook_Auction_AddBuySellOrderMid(t *testing.T) {
 	assert.AssertEqualT(t, 0, len(bk.SellAuctionOrders()), "sell orders")
 
 	containsExec(t, e3, "cli1", "id1", OrdStatusPartiallyFilled, "part fill", 50, 1.01)
-
-	printExecs(e3)
 }
 
 func Test_OrderBook_Auction_MatchBuySellOrder(t *testing.T) {

@@ -100,6 +100,10 @@ func printExecs(execs []ExecutionReport) {
 	for i, s := range execs {
 		fmt.Printf("e%d %v\n", i, s)
 	}
+	fmt.Printf("i|clientid|clordid|side|lastprice|lastvol\n")
+	for i, s := range execs {
+		fmt.Printf("e%d|%s|%s|%s|%v|%v\n", i, s.ClientID(), s.ClOrdID(), SideToString(s.Side()), s.LastPrice(), s.LastQty())
+	}
 }
 
 func containsExec(t *testing.T, execs []ExecutionReport, clientID string, clOrdID string, status OrdStatus, msg string, lastq int64, lastp float64) {
@@ -115,6 +119,6 @@ func containsExec(t *testing.T, execs []ExecutionReport, clientID string, clOrdI
 	}
 	if found == 0 {
 		_, file, line, _ := runtime.Caller(1)
-		t.Errorf("\n%s:%d: not found %s %s:%s %v %d %f", assert.AssertionAt(file), line, msg, clientID, clOrdID, status, lastq, lastp)
+		t.Errorf("\n%s:%d: not found %s %s:%s %v %d %f", assert.AssertionAt(file), line, msg, clientID, clOrdID, OrdStatusToString(status), lastq, lastp)
 	}
 }

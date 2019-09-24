@@ -1,8 +1,11 @@
 package orderbook
 
-import "errors"
+type Error string
 
-var DuplicateOrder = errors.New("duplicate order")
-var AuctionNotOpen = errors.New("invalid state: auction not open")
-var AuctionOpen = errors.New("invalid state: auction open")
-var TradingNotOpen = errors.New("invalid state: trading not open")
+func (e Error) Error() string { return string(e) }
+
+const DuplicateOrder = Error("duplicate order")
+const AuctionNotOpen = Error("invalid state: auction not open")
+const AuctionOpen = Error("invalid state: auction open")
+const TradingNotOpen = Error("invalid state: trading not open")
+const OrderBookEmpty = Error("orderbook empty")
