@@ -123,11 +123,12 @@ func Test_OrderBook_Auction_FillOrdersStateless(t *testing.T) {
 
 func Test_OrderBook_Auction_FillOrdersWithState(t *testing.T) {
 	bk := makeOrderBook_for_OrderBook_Auction(t)
+	printOrders(bk.auctionBookOrders())
 	state := newAuctionCloseCalculator()
 	execs, err := state.fillAuctionAtClearingPrice(bk.auctionBookOrders())
 	assert.AssertEqualT(t, 44, len(execs), "44")
 	assert.AssertEqualT(t, nil, err, "min err")
-	printExecs(execs)
+	printExecsAndOrders(execs, bk.auctionBookOrders())
 
 	assert.Fail(t, "add more tests")
 }

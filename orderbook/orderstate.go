@@ -125,7 +125,7 @@ type orderState struct {
 }
 
 func (b *orderState) String() string {
-	str1 := fmt.Sprintf("OrderState: instrumentID:%s, clientID:%s, clOrdID:%s, side:%v, pricee:%f, orderQty:%d, orderType:%v, timeInForce:%v, expireOn:%v, transactTime:%v, ",
+	str1 := fmt.Sprintf("OrderState: instrumentID:%s, clientID:%s, clOrdID:%s, side:%v, price:%f, orderQty:%d, orderType:%v, timeInForce:%v, expireOn:%v, transactTime:%v, ",
 		b.instrumentID,
 		b.clientID,
 		b.clOrdID,

@@ -160,16 +160,15 @@ func (s *auctionclose) calcClearingPricePercentages() {
 }
 
 func (s *auctionclose) fillAuctionAtClearingPrice(bk *buySellOrders) (execs []ExecutionReport, err error) {
-	//match := func(neworder OrderState, bookorder OrderState) bool {
-	//	return neworder.LeavesQty() >= 0
-	//}
 	execs = []ExecutionReport{}
 	s.calcClearingPrice(bk)
 	s.calcClearingPricePercentages()
-	fmt.Printf("fillAuctionAtClearingPrice (auctionclose) %%buy %v %%sell %v upper: %v lower: %v clear vol %d mid clearing price %v \n",
-		s.buy.percent, s.sell.percent, s.sell.pricelimit, s.buy.pricelimit, s.clearingvol, s.midclearingprice)
+	//fmt.Printf("fillAuctionAtClearingPrice (auctionclose) %%buy %v %%sell %v upper: %v lower: %v clear vol %d mid clearing price %v \n",
+	// s.buy.percent, s.sell.percent, s.sell.pricelimit, s.buy.pricelimit, s.clearingvol, s.midclearingprice)
 	upper, _ := s.sell.pricelimit.Float64()
 	lower, _ := s.buy.pricelimit.Float64()
+	lowercp, _ := s.sell.clearingprice.Float64()
+	uppercp, _ := s.buy.clearingprice.Float64()
 
 	filledSellBookOrders := []OrderState{}
 	filledBuyBookOrders := []OrderState{}
@@ -180,28 +179,28 @@ func (s *auctionclose) fillAuctionAtClearingPrice(bk *buySellOrders) (execs []Ex
 		//fmt.Printf("fillAuctionAtClearingPrice (auctionclose): buyorder %v \n", buyorder)
 		for iter := bk.sellOrders.iterator(); iter.Next() == true; {
 			sellorder := iter.Value().(OrderState)
-			fmt.Printf("fillAuctionAtClearingPrice (auctionclose): sellorder %v buyorder %v \n", sellorder, buyorder)
+			//fmt.Printf("fillAuctionAtClearingPrice (auctionclose): sellorder %v buyorder %v \n", sellorder, buyorder)
 			/*
 				match buy greater or equal than lower price
 				match sell less or equal than upper price
 			*/
 			if buyorder.LeavesQty() > 0 && (buyorder.Price() >= lower && sellorder.Price() <= upper) {
 				tofill := min(sellorder.LeavesQty(), buyorder.LeavesQty())
-				fmt.Printf("to fill %d\n", tofill)
+				//fmt.Printf("to fill %d\n", tofill)
 				if tofill > 0 && cumqty <= s.clearingvol {
 					cumqty += tofill
 					tofilld := decimal.New(tofill, 0)
 					tofillbuy := tofilld.Mul(s.buy.percent).Round(0).IntPart()
 					tofillsell := tofill - tofillbuy
-					fmt.Printf("fillAuctionAtClearingPrice (auctionclose) sell orders: perc %v to fill %d buy fill %d, sell fill %d\n", s.buy.percent, tofill, tofillbuy, tofillsell)
+					//fmt.Printf("fillAuctionAtClearingPrice (auctionclose) sell orders: perc %v to fill %d buy fill %d, sell fill %d\n", s.buy.percent, tofill, tofillbuy, tofillsell)
 					buyorder.fill(tofillbuy)
 					sellorder.fill(tofillbuy)
-					execs = append(execs, MakeFillExecutionReport(sellorder, lower, tofillbuy))
-					execs = append(execs, MakeFillExecutionReport(buyorder, lower, tofillbuy))
+					execs = append(execs, MakeFillExecutionReport(sellorder, lowercp, tofillbuy))
+					execs = append(execs, MakeFillExecutionReport(buyorder, lowercp, tofillbuy))
 					buyorder.fill(tofillsell)
 					sellorder.fill(tofillsell)
-					execs = append(execs, MakeFillExecutionReport(sellorder, upper, tofillsell))
-					execs = append(execs, MakeFillExecutionReport(buyorder, upper, tofillsell))
+					execs = append(execs, MakeFillExecutionReport(sellorder, uppercp, tofillsell))
+					execs = append(execs, MakeFillExecutionReport(buyorder, uppercp, tofillsell))
 					if sellorder.LeavesQty() == 0 {
 						filledSellBookOrders = append(filledSellBookOrders, sellorder)
 					}
@@ -210,36 +209,12 @@ func (s *auctionclose) fillAuctionAtClearingPrice(bk *buySellOrders) (execs []Ex
 					}
 				}
 			} else {
-				fmt.Printf("fillAuctionAtClearingPrice (auctionclose) no match: buyorder.LeavesQty() %d sellorder.Price() %v buyorder.Price() %v upper %v lower %v\n",
-					buyorder.LeavesQty(), sellorder.Price(), buyorder.Price(), upper, lower)
+				//fmt.Printf("fillAuctionAtClearingPrice (auctionclose) no match: buyorder.LeavesQty() %d sellorder.Price() %v buyorder.Price() %v upper %v lower %v\n",
+				//	buyorder.LeavesQty(), sellorder.Price(), buyorder.Price(), upper, lower)
 
 			}
 		}
 	}
-
-	//p, _ := s.midclearingprice.Float64()
-	//sellorder := makeMarketOrderForAuction(s.clearingvol, p, SideSell)
-	//for iter := bk.buyOrders.iterator(); iter.Next() == true; {
-	//	bookorder := iter.Value().(OrderState)
-	//	if match(sellorder, bookorder) && bookorder.Price() >= sellorder.Price() {
-	//		tofill := min(bookorder.LeavesQty(), sellorder.LeavesQty())
-	//		if tofill > 0 {
-	//			tofilld := decimal.New(tofill, 0)
-	//			tofillbuy := tofilld.Mul(s.buy.percent).Round(0).IntPart()
-	//			tofillsell := tofill - tofillbuy
-	//			fmt.Printf("buy orders: perc %v to fill %d buy fill %d, sell fill %d\n", s.buy.percent, tofill, tofillbuy, tofillsell)
-	//			sellorder.fill(tofillbuy)
-	//			bookorder.fill(tofillbuy)
-	//			execs = append(execs, MakeFillExecutionReport(bookorder, lowerprice, tofillbuy))
-	//			sellorder.fill(tofillsell)
-	//			bookorder.fill(tofillsell)
-	//			execs = append(execs, MakeFillExecutionReport(bookorder, upperprice, tofillsell))
-	//			if bookorder.LeavesQty() == 0 {
-	//				filledBuyBookOrders = append(filledBuyBookOrders, bookorder)
-	//			}
-	//		}
-	//	}
-	//}
 
 	for _, v := range filledSellBookOrders {
 		bk.sellOrders.RemoveByID(v.OrderID())

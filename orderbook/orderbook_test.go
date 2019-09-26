@@ -106,6 +106,38 @@ func printExecs(execs []ExecutionReport) {
 	}
 }
 
+func printExecsAndOrders(execs []ExecutionReport, bk *buySellOrders) {
+	for i, s := range execs {
+		fmt.Printf("e%d %v\n", i, s)
+	}
+	fmt.Printf("i|clientid|clordid|side|lastprice|lastvol|price|qty|leavesqty\n")
+	for i, s := range execs {
+		var order OrderState
+		if s.Side() == SideBuy {
+			order = bk.buyOrders.FindByClOrdID(s.ClOrdID())
+		} else {
+			order = bk.sellOrders.FindByClOrdID(s.ClOrdID())
+		}
+		if order != nil {
+			fmt.Printf("e%d|%s|%s|%s|%v|%v|%v|%v|%v\n", i, s.ClientID(), s.ClOrdID(), SideToString(s.Side()), s.LastPrice(), s.LastQty(), order.Price(), order.OrderQty(), order.LeavesQty())
+		} else {
+			fmt.Printf("e%d|%s|%s|%s|%v|%v\n", i, s.ClientID(), s.ClOrdID(), SideToString(s.Side()), s.LastPrice(), s.LastQty())
+		}
+	}
+}
+
+func printOrders(bk *buySellOrders) {
+	fmt.Printf("clientid|clordid|side|gty|price \n")
+	for iter := bk.buyOrders.iterator(); iter.Next() == true; {
+		order := iter.Value().(OrderState)
+		fmt.Printf("%s|%s|%v|%v|%v \n", order.ClientID(), order.ClOrdID(), SideToString(order.Side()), order.OrderQty(), order.Price())
+	}
+	for iter := bk.sellOrders.iterator(); iter.Next() == true; {
+		order := iter.Value().(OrderState)
+		fmt.Printf("%s|%s|%v|%v|%v \n", order.ClientID(), order.ClOrdID(), SideToString(order.Side()), order.OrderQty(), order.Price())
+	}
+}
+
 func containsExec(t *testing.T, execs []ExecutionReport, clientID string, clOrdID string, status OrdStatus, msg string, lastq int64, lastp float64) {
 	var found = 0
 	for _, v := range execs {
