@@ -60,7 +60,7 @@ func Test_OrderBook_State_OpenOrderEntry_Trading_Limit_SellLessThanBuy(t *testin
 
 	e3, _ := bk.OpenTrading()
 
-	printExecs(e3)
+	//printExecs(e3)
 
 	assert.AssertEqualT(t, 4, len(e3), "e3 empty")
 	assert.AssertEqualT(t, 2, bk.BuySize(), "buy size should be 2")

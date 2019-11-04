@@ -24,3 +24,17 @@ func TimeInForceConv(str string) TimeInForce {
 	}
 	return TimeInForceUnknown
 }
+
+func (tif TimeInForce) String() string {
+	switch tif {
+	case TimeInForceDay:
+		return "Day"
+	case TimeInForceGoodForAuction:
+		return "GoodForAuction"
+	case TimeInForceGoodTillCancel:
+		return "GoodTillCancel"
+	case TimeInForceGoodForTime:
+		return "GoodForTime"
+	}
+	return "TimeInForceUnknown"
+}

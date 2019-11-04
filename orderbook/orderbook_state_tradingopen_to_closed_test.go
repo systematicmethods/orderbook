@@ -58,6 +58,6 @@ func Test_OrderBook_State_TradingOpen_Closed_GoodForDay(t *testing.T) {
 	assert.AssertEqualT(t, 0, bk.BuySize(), "buy size should be 0")
 	assert.AssertEqualT(t, 0, bk.SellSize(), "sell size should be 0")
 
-	printExecs(execs)
+	//printExecs(execs)
 	containsExec(t, execs, "cli2", "id22", OrdStatusCanceled, "cancel", 0, 0)
 }

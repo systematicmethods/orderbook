@@ -129,7 +129,7 @@ func (b *orderState) String() string {
 		b.instrumentID,
 		b.clientID,
 		b.clOrdID,
-		SideToString(b.side),
+		b.side,
 		b.price,
 		b.orderQty,
 		OrderTypeToString(b.orderType),

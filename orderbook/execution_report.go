@@ -56,7 +56,7 @@ func (b *executionReport) String() string {
 		b.instrumentID,
 		b.clientID,
 		b.clOrdID,
-		SideToString(b.side),
+		b.side,
 		b.lastQty,
 		b.lastPrice,
 		ExecTypeToString(b.execType),

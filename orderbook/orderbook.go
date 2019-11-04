@@ -1,6 +1,7 @@
 package orderbook
 
 import (
+	"fmt"
 	"github.com/andres-erbsen/clock"
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
@@ -138,6 +139,7 @@ func cancelOrderByFn(ol OrderList, time time.Time, fn func(order OrderState, t t
 
 func (b *orderbook) Tick(tm time.Time) ([]ExecutionReport, error) {
 	fn := func(order OrderState, t time.Time) bool {
+		fmt.Printf("tif %v now %v expire %v\n", order.TimeInForce(), t, order.ExpireOn())
 		return order.TimeInForce() == TimeInForceGoodForTime && !t.Before(order.ExpireOn())
 	}
 	execs := cancelOrderByFn(b.obOrders.buyOrders, tm, fn)

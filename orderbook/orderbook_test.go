@@ -17,6 +17,11 @@ func makeMockClock(hour, min, sec int) *clock.Mock {
 	return aclock
 }
 
+func makeMockClockFromTime(dt time.Time) *clock.Mock {
+	aclock := clock.NewMock()
+	aclock.Set(dt)
+	return aclock
+}
 func makeTime(hour, min, sec int) time.Time {
 	loc, _ := time.LoadLocation("UTC")
 	return time.Date(2019, 10, 11, hour, min, sec, 0, loc)
@@ -27,6 +32,10 @@ func makeLongTime(hour, min, sec int) time.Time {
 	return time.Date(2019, 10, 21, hour, min, sec, 0, loc)
 }
 
+func makeDateTime(year, month, day, hour, min, sec int) time.Time {
+	loc, _ := time.LoadLocation("UTC")
+	return time.Date(year, time.Month(month), day, hour, min, sec, 0, loc)
+}
 func makeLimitOrder(clientID string, clOrdID string, side Side, qty int64, price float64) NewOrderSingle {
 	dt := makeTime(11, 11, 1)
 	return MakeNewOrderLimit(
@@ -100,29 +109,9 @@ func printExecs(execs []ExecutionReport) {
 	for i, s := range execs {
 		fmt.Printf("e%d %v\n", i, s)
 	}
-	fmt.Printf("i|clientid|clordid|side|lastprice|lastvol\n")
+	fmt.Printf("id|clientid|clordid|side|lastprice|lastqty|status\n")
 	for i, s := range execs {
-		fmt.Printf("e%d|%s|%s|%s|%v|%v\n", i, s.ClientID(), s.ClOrdID(), SideToString(s.Side()), s.LastPrice(), s.LastQty())
-	}
-}
-
-func printExecsAndOrders(execs []ExecutionReport, bk *buySellOrders) {
-	for i, s := range execs {
-		fmt.Printf("e%d %v\n", i, s)
-	}
-	fmt.Printf("i|clientid|clordid|side|lastprice|lastvol|price|qty|leavesqty\n")
-	for i, s := range execs {
-		var order OrderState
-		if s.Side() == SideBuy {
-			order = bk.buyOrders.FindByClOrdID(s.ClOrdID())
-		} else {
-			order = bk.sellOrders.FindByClOrdID(s.ClOrdID())
-		}
-		if order != nil {
-			fmt.Printf("e%d|%s|%s|%s|%v|%v|%v|%v|%v\n", i, s.ClientID(), s.ClOrdID(), SideToString(s.Side()), s.LastPrice(), s.LastQty(), order.Price(), order.OrderQty(), order.LeavesQty())
-		} else {
-			fmt.Printf("e%d|%s|%s|%s|%v|%v\n", i, s.ClientID(), s.ClOrdID(), SideToString(s.Side()), s.LastPrice(), s.LastQty())
-		}
+		fmt.Printf("e%d|%s|%s|%s|%v|%v|%v\n", i, s.ClientID(), s.ClOrdID(), s.Side(), s.LastPrice(), s.LastQty(), OrdStatusToString(s.OrdStatus()))
 	}
 }
 
@@ -130,14 +119,41 @@ func printOrders(bk *buySellOrders) {
 	fmt.Printf("clientid|clordid|side|gty|price \n")
 	for iter := bk.buyOrders.iterator(); iter.Next() == true; {
 		order := iter.Value().(OrderState)
-		fmt.Printf("%s|%s|%v|%v|%v \n", order.ClientID(), order.ClOrdID(), SideToString(order.Side()), order.OrderQty(), order.Price())
+		fmt.Printf("%s|%s|%v|%v|%v \n", order.ClientID(), order.ClOrdID(), order.Side(), order.OrderQty(), order.Price())
 	}
 	for iter := bk.sellOrders.iterator(); iter.Next() == true; {
 		order := iter.Value().(OrderState)
-		fmt.Printf("%s|%s|%v|%v|%v \n", order.ClientID(), order.ClOrdID(), SideToString(order.Side()), order.OrderQty(), order.Price())
+		fmt.Printf("%s|%s|%v|%v|%v \n", order.ClientID(), order.ClOrdID(), order.Side(), order.OrderQty(), order.Price())
 	}
 }
 
+func printExecsAndOrders(execs []ExecutionReport, bk *buySellOrders, buyorders []OrderState, sellorders []OrderState) {
+	for i, s := range execs {
+		fmt.Printf("e%d %v\n", i, s)
+	}
+	fmt.Printf("id|clientid|clordid|side|lastprice|lastqty|status|price|qty|ordstatus\n")
+	for i, ex := range execs {
+		var order OrderState
+		if ex.Side() == SideBuy {
+			for _, anorder := range buyorders {
+				if anorder.ClOrdID() == ex.ClOrdID() {
+					order = anorder
+				}
+			}
+		} else {
+			for _, anorder := range sellorders {
+				if anorder.ClOrdID() == ex.ClOrdID() {
+					order = anorder
+				}
+			}
+		}
+		if order != nil {
+			fmt.Printf("e%d|%s|%s|%s|%v|%v|%v|%v|%v|%v\n", i, ex.ClientID(), ex.ClOrdID(), ex.Side(), ex.LastPrice(), ex.LastQty(), ex.OrdStatus(), order.Price(), order.OrderQty(), order.OrdStatus())
+		} else {
+			fmt.Printf("e%d|%s|%s|%s|%v|%v|%v|\n", i, ex.ClientID(), ex.ClOrdID(), ex.Side(), ex.LastPrice(), ex.LastQty(), ex.OrdStatus())
+		}
+	}
+}
 func containsExec(t *testing.T, execs []ExecutionReport, clientID string, clOrdID string, status OrdStatus, msg string, lastq int64, lastp float64) {
 	var found = 0
 	for _, v := range execs {

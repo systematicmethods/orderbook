@@ -6,8 +6,8 @@ type Side rune
 
 const (
 	SideBuy     Side = '1'
-	SideSell         = '2'
-	SideUnknown      = 'u'
+	SideSell    Side = '2'
+	SideUnknown Side = 'u'
 )
 
 func SideConv(side string) Side {
@@ -20,7 +20,7 @@ func SideConv(side string) Side {
 	return SideUnknown
 }
 
-func SideToString(side Side) string {
+func (side Side) String() string {
 	switch side {
 	case SideBuy:
 		return "buy"

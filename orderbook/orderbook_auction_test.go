@@ -41,7 +41,7 @@ func Test_OrderBook_Auction_AddBuySellOrderMid(t *testing.T) {
 	e3, clrPrice, clrVol, _ := bk.CloseAuction()
 	assert.AssertEqualT(t, 5, len(e3), "e3 5")
 	assert.AssertEqualTfloat64(t, 1.015, clrPrice, 0.0001, "clearing price")
-	assert.AssertEqualTint64(t, 100, clrVol, "clearing vol")
+	assert.AssertEqualT(t, int64(100), clrVol, "clearing vol")
 	assert.AssertEqualT(t, 0, len(bk.BuyAuctionOrders()), "buy orders")
 	assert.AssertEqualT(t, 0, len(bk.SellAuctionOrders()), "sell orders")
 
@@ -49,6 +49,7 @@ func Test_OrderBook_Auction_AddBuySellOrderMid(t *testing.T) {
 }
 
 func Test_OrderBook_Auction_MatchBuySellOrder(t *testing.T) {
+
 	ins := instrument.MakeInstrument(inst, "ABV Investments")
 	bk := MakeOrderBook(ins, OrderBookEventTypeOpenAuction, clock.NewMock())
 
@@ -69,37 +70,48 @@ func Test_OrderBook_Auction_MatchBuySellOrder(t *testing.T) {
 	assert.AssertEqualT(t, 2, len(bk.SellAuctionOrders()), "sell orders")
 
 	e3, clrPrice, clrVol, _ := bk.CloseAuction()
-	assert.AssertEqualT(t, 12, len(e3), "e3 ")
+	assert.AssertEqualT(t, 16, len(e3), "e3 ")
 	assert.AssertEqualTfloat64(t, 1.005, clrPrice, 0.0001, "clearing price")
-	assert.AssertEqualTint64(t, 202, clrVol, "clearing vol")
+	assert.AssertEqualT(t, int64(202), clrVol, "clearing vol")
 	assert.AssertEqualT(t, 0, len(bk.BuyAuctionOrders()), "buy orders")
 	assert.AssertEqualT(t, 0, len(bk.SellAuctionOrders()), "sell orders")
 
-	containsExec(t, e3, "cli1", "id21", OrdStatusPartiallyFilled, "part fill", 100, 1.01)
-	containsExec(t, e3, "cli1", "id21", OrdStatusFilled, "fill", 1, 1.01)
-	containsExec(t, e3, "cli1", "id22", OrdStatusPartiallyFilled, "part fill", 99, 1.01)
-	containsExec(t, e3, "cli1", "id22", OrdStatusFilled, "fill", 2, 1.01)
+	csv := `id|clientid|clordid|side|lastprice|lastqty|status
+e0|cli1|id21|sell|1|50|PartiallyFilled
+e1|cli2|id2|buy|1|50|PartiallyFilled
+e2|cli1|id21|sell|1.01|50|PartiallyFilled
+e3|cli2|id2|buy|1.01|50|Filled
+e4|cli1|id21|sell|1|1|Filled
+e5|cli2|id3|buy|1|1|PartiallyFilled
+e6|cli1|id22|sell|1|50|PartiallyFilled
+e7|cli2|id3|buy|1|50|PartiallyFilled
+e8|cli1|id22|sell|1.01|49|PartiallyFilled
+e9|cli2|id3|buy|1.01|49|Filled
+e10|cli1|id22|sell|1|1|PartiallyFilled
+e11|cli2|id4|buy|1|1|PartiallyFilled
+e12|cli1|id22|sell|1.01|1|Filled
+e13|cli2|id4|buy|1.01|1|PartiallyFilled
+e14|cli2|id4|buy|0|0|Cancelled
+e15|cli2|id5|buy|0|0|Cancelled`
+	expected := loadExecCSV(csv)
 
-	containsExec(t, e3, "cli2", "id2", OrdStatusFilled, "fill", 100, 1.01)
-	containsExec(t, e3, "cli2", "id3", OrdStatusPartiallyFilled, "fill", 1, 1.01)
-	containsExec(t, e3, "cli2", "id3", OrdStatusFilled, "fill", 99, 1.01)
-	containsExec(t, e3, "cli2", "id4", OrdStatusPartiallyFilled, "fill", 2, 1.01)
-	containsExec(t, e3, "cli2", "id4", OrdStatusCanceled, "cancel", 0, 0)
-	containsExec(t, e3, "cli2", "id5", OrdStatusCanceled, "cancel", 0, 0)
+	for _, ex := range expected {
+		containsExecCSV(t, e3, ex, "e3")
+	}
 
-	printExecs(e3)
+	//printExecs(e3)
 }
 
 func Test_OrderBook_Auction_MatchSellBuyOrder(t *testing.T) {
 	ins := instrument.MakeInstrument(inst, "ABV Investments")
 	bk := MakeOrderBook(ins, OrderBookEventTypeOpenAuction, clock.NewMock())
 
-	e10, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id2", SideSell, 100, 1.00))
-	e11, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id3", SideSell, 100, 1.00))
-	e12, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id4", SideSell, 100, 1.00))
-	e13, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id5", SideSell, 100, 1.00))
-	e21, _ := bk.NewOrder(makeAuctionLimitOrder("cli1", "id21", SideBuy, 101, 1.01))
-	e22, _ := bk.NewOrder(makeAuctionLimitOrder("cli1", "id22", SideBuy, 101, 1.01))
+	e10, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id2", SideSell, 100, 1.00)) // 2
+	e11, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id3", SideSell, 100, 1.00)) // 2
+	e12, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id4", SideSell, 100, 1.00)) // 2 + 1
+	e13, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id5", SideSell, 100, 1.00)) // 1
+	e21, _ := bk.NewOrder(makeAuctionLimitOrder("cli1", "id21", SideBuy, 101, 1.01)) // 2 + 1
+	e22, _ := bk.NewOrder(makeAuctionLimitOrder("cli1", "id22", SideBuy, 101, 1.01)) // 2 + 1
 
 	assert.AssertEqualT(t, 1, len(e10), "e10 empty")
 	assert.AssertEqualT(t, 1, len(e11), "e11 empty")
@@ -111,37 +123,48 @@ func Test_OrderBook_Auction_MatchSellBuyOrder(t *testing.T) {
 	assert.AssertEqualT(t, 4, len(bk.SellAuctionOrders()), "sell orders")
 
 	e3, clrPrice, clrVol, _ := bk.CloseAuction()
-	assert.AssertEqualT(t, 10, len(e3), "e3 empty")
+	assert.AssertEqualT(t, 16, len(e3), "e3 empty")
 	assert.AssertEqualT(t, 0, len(bk.BuyAuctionOrders()), "buy orders")
 	assert.AssertEqualT(t, 0, len(bk.SellAuctionOrders()), "sell orders")
-	assert.AssertEqualT(t, 0, clrPrice, "clearing price")
-	assert.AssertEqualTint64(t, 0, clrVol, "clearing vol")
+	assert.AssertEqualT(t, 1.005, clrPrice, "clearing price")
+	assert.AssertEqualT(t, int64(202), clrVol, "clearing vol")
+
+	csv := `id|clientid|clordid|side|lastprice|lastqty|status
+e0|cli2|id2|sell|1|50|PartiallyFilled
+e1|cli1|id21|buy|1|50|PartiallyFilled
+e2|cli2|id2|sell|1.01|50|Filled
+e3|cli1|id21|buy|1.01|50|PartiallyFilled
+e4|cli2|id3|sell|1|1|PartiallyFilled
+e5|cli1|id21|buy|1|1|Filled
+e6|cli2|id3|sell|1|50|PartiallyFilled
+e7|cli1|id22|buy|1|50|PartiallyFilled
+e8|cli2|id3|sell|1.01|49|Filled
+e9|cli1|id22|buy|1.01|49|PartiallyFilled
+e10|cli2|id4|sell|1|1|PartiallyFilled
+e11|cli1|id22|buy|1|1|PartiallyFilled
+e12|cli2|id4|sell|1.01|1|PartiallyFilled
+e13|cli1|id22|buy|1.01|1|Filled
+e14|cli2|id4|sell|0|0|Cancelled
+e15|cli2|id5|sell|0|0|Cancelled`
+	expected := loadExecCSV(csv)
+
+	for _, ex := range expected {
+		containsExecCSV(t, e3, ex, "e3")
+	}
 
 	//printExecs(e3)
-
-	containsExec(t, e3, "cli1", "id21", OrdStatusPartiallyFilled, "part fill", 100, 1.01)
-	containsExec(t, e3, "cli1", "id21", OrdStatusFilled, "fill", 1, 1.01)
-	containsExec(t, e3, "cli1", "id22", OrdStatusPartiallyFilled, "part fill", 99, 1.01)
-	containsExec(t, e3, "cli1", "id22", OrdStatusFilled, "fill", 2, 1.01)
-
-	containsExec(t, e3, "cli2", "id2", OrdStatusFilled, "fill", 100, 1.01)
-	containsExec(t, e3, "cli2", "id3", OrdStatusPartiallyFilled, "fill", 1, 1.01)
-	containsExec(t, e3, "cli2", "id3", OrdStatusFilled, "fill", 99, 1.01)
-	containsExec(t, e3, "cli2", "id4", OrdStatusPartiallyFilled, "fill", 2, 1.01)
-	containsExec(t, e3, "cli2", "id4", OrdStatusCanceled, "cancel", 0, 0)
-	containsExec(t, e3, "cli2", "id5", OrdStatusCanceled, "cancel", 0, 0)
 }
 
 func Test_OrderBook_Auction_MatchSellBuyOrderPlaceDuringTrading(t *testing.T) {
 	ins := instrument.MakeInstrument(inst, "ABV Investments")
 	bk := MakeOrderBook(ins, OrderBookEventTypeOpenOrderEntry, clock.NewMock())
 
-	e10, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id2", SideSell, 100, 1.00))
-	e11, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id3", SideSell, 100, 1.00))
-	e12, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id4", SideSell, 100, 1.00))
-	e13, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id5", SideSell, 100, 1.00))
-	e21, _ := bk.NewOrder(makeAuctionLimitOrder("cli1", "id21", SideBuy, 101, 1.01))
-	e22, _ := bk.NewOrder(makeAuctionLimitOrder("cli1", "id22", SideBuy, 101, 1.01))
+	e10, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id2", SideSell, 100, 1.00)) // 2x50
+	e11, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id3", SideSell, 100, 1.00)) // 1x1 1x50 1x49
+	e12, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id4", SideSell, 100, 1.00)) // 1x1 1x1 1xC
+	e13, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id5", SideSell, 100, 1.00)) // 1xC
+	e21, _ := bk.NewOrder(makeAuctionLimitOrder("cli1", "id21", SideBuy, 101, 1.01)) // 2x50 1x1
+	e22, _ := bk.NewOrder(makeAuctionLimitOrder("cli1", "id22", SideBuy, 101, 1.01)) // 1x50 1x49 1x1 1x1
 
 	assert.AssertEqualT(t, 1, len(e10), "e10 empty")
 	assert.AssertEqualT(t, 1, len(e11), "e11 empty")
@@ -160,24 +183,34 @@ func Test_OrderBook_Auction_MatchSellBuyOrderPlaceDuringTrading(t *testing.T) {
 	assert.AssertNilT(t, err, "should open auction")
 
 	e3, clrPrice, clrVol, err := bk.CloseAuction()
-	assert.AssertEqualT(t, 10, len(e3), "e3 empty")
+	assert.AssertEqualT(t, 16, len(e3), "e3 wrong")
 	assert.AssertEqualT(t, 0, len(bk.BuyAuctionOrders()), "buy orders")
 	assert.AssertEqualT(t, 0, len(bk.SellAuctionOrders()), "sell orders")
-	assert.AssertEqualT(t, 0, clrPrice, "clearing price")
-	assert.AssertEqualTint64(t, 0, clrVol, "clearing vol")
+	assert.AssertEqualT(t, 1.005, clrPrice, "clearing price")
+	assert.AssertEqualT(t, int64(202), clrVol, "clearing vol")
+
+	csv := `id|clientid|clordid|side|lastprice|lastqty|status
+e0|cli2|id2|sell|1|50|PartiallyFilled
+e1|cli1|id21|buy|1|50|PartiallyFilled
+e2|cli2|id2|sell|1.01|50|Filled
+e3|cli1|id21|buy|1.01|50|PartiallyFilled
+e4|cli2|id3|sell|1|1|PartiallyFilled
+e5|cli1|id21|buy|1|1|Filled
+e6|cli2|id3|sell|1|50|PartiallyFilled
+e7|cli1|id22|buy|1|50|PartiallyFilled
+e8|cli2|id3|sell|1.01|49|Filled
+e9|cli1|id22|buy|1.01|49|PartiallyFilled
+e10|cli2|id4|sell|1|1|PartiallyFilled
+e11|cli1|id22|buy|1|1|PartiallyFilled
+e12|cli2|id4|sell|1.01|1|PartiallyFilled
+e13|cli1|id22|buy|1.01|1|Filled
+e14|cli2|id4|sell|0|0|Cancelled
+e15|cli2|id5|sell|0|0|Cancelled`
+	expected := loadExecCSV(csv)
+
+	for _, ex := range expected {
+		containsExecCSV(t, e3, ex, "e3")
+	}
 
 	//printExecs(e3)
-
-	containsExec(t, e3, "cli1", "id21", OrdStatusPartiallyFilled, "part fill", 100, 1.01)
-	containsExec(t, e3, "cli1", "id21", OrdStatusFilled, "fill", 1, 1.01)
-	containsExec(t, e3, "cli1", "id22", OrdStatusPartiallyFilled, "part fill", 99, 1.01)
-	containsExec(t, e3, "cli1", "id22", OrdStatusFilled, "fill", 2, 1.01)
-
-	containsExec(t, e3, "cli2", "id2", OrdStatusFilled, "fill", 100, 1.01)
-	containsExec(t, e3, "cli2", "id3", OrdStatusPartiallyFilled, "fill", 1, 1.01)
-	containsExec(t, e3, "cli2", "id3", OrdStatusFilled, "fill", 99, 1.01)
-	containsExec(t, e3, "cli2", "id4", OrdStatusPartiallyFilled, "fill", 2, 1.01)
-	containsExec(t, e3, "cli2", "id4", OrdStatusCanceled, "cancel", 0, 0)
-	containsExec(t, e3, "cli2", "id5", OrdStatusCanceled, "cancel", 0, 0)
-
 }

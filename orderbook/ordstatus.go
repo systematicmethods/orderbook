@@ -43,8 +43,8 @@ func OrdStatusConv(thetype string) OrdStatus {
 	return OrdStatusUnknown
 }
 
-func OrdStatusToString(thetype OrdStatus) string {
-	switch thetype {
+func (side OrdStatus) String() string {
+	switch side {
 	case OrdStatusNew:
 		return "New"
 	case OrdStatusPartiallyFilled:
@@ -63,4 +63,8 @@ func OrdStatusToString(thetype OrdStatus) string {
 		return "Expired"
 	}
 	return "OrdStatusUnknown"
+}
+
+func OrdStatusToString(thetype OrdStatus) string {
+	return thetype.String()
 }

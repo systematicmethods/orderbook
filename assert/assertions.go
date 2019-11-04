@@ -33,15 +33,6 @@ func Fail(t *testing.T, msg string) {
 	t.Errorf("\n%s:%d: %s", AssertionAt(file), line, msg)
 }
 
-func AssertEqualTint64(t *testing.T, ex int64, ac int64, msg string) bool {
-	if ex != ac {
-		_, file, line, _ := runtime.Caller(1)
-		t.Errorf("\n%s:%d: %s expected '%v' actual '%v'", AssertionAt(file), line, msg, ex, ac)
-		return false
-	}
-	return true
-}
-
 func AssertEqualTfloat64(t *testing.T, ex float64, ac float64, epsilon float64, msg string) bool {
 	if (math.Abs(ex - ac)) > epsilon {
 		_, file, line, _ := runtime.Caller(1)
@@ -59,6 +50,7 @@ func AssertEqualTdecimal(t *testing.T, ex decimal.Decimal, ac decimal.Decimal, e
 	}
 	return true
 }
+
 func AssertionAt(file string) string {
 	var short string
 	for i := len(file) - 1; i > 0; i-- {
