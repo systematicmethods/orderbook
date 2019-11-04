@@ -5,6 +5,7 @@ variables:
 
 stages:
   - test
+  - cover
   - build
   - changelog
 
@@ -24,6 +25,13 @@ test:
       - README.md
       - CHANGELOG.md
       - doc/*
+
+coverage:
+  stage: cover
+  tags:
+    - docker
+  script:
+    - go test -cover ./...
 
 compile:
   stage: build
