@@ -20,8 +20,8 @@ func SideConv(side string) Side {
 	return SideUnknown
 }
 
-func (side Side) String() string {
-	switch side {
+func (it Side) String() string {
+	switch it {
 	case SideBuy:
 		return "buy"
 	case SideSell:

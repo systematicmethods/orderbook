@@ -105,12 +105,12 @@ func (b *orderbook) NewOrder(order NewOrderSingle) ([]ExecutionReport, error) {
 
 	if order.TimeInForce() == TimeInForceImmediateOrCancel {
 		if orderstate := b.obOrders.buyOrders.FindByID(order.OrderID()); orderstate != nil {
-			exec := MakeRestateOrderExecutionReport(orderstate)
+			exec := MakeOrderCancelledExecutionReport(orderstate, ExecTypeCanceled)
 			execs = append(execs, exec)
 			b.obOrders.buyOrders.RemoveByID(orderstate.OrderID())
 		}
 		if orderstate := b.obOrders.sellOrders.FindByID(order.OrderID()); orderstate != nil {
-			exec := MakeRestateOrderExecutionReport(orderstate)
+			exec := MakeOrderCancelledExecutionReport(orderstate, ExecTypeCanceled)
 			execs = append(execs, exec)
 			b.obOrders.sellOrders.RemoveByID(orderstate.OrderID())
 		}
@@ -126,7 +126,7 @@ func cancelOrderByFn(ol OrderList, time time.Time, fn func(order OrderState, t t
 		order := iter.Value().(OrderState)
 		if fn(order, time) {
 			orders = append(orders, order)
-			exec := MakeRestateOrderExecutionReport(order)
+			exec := MakeOrderCancelledExecutionReport(order, ExecTypeCanceled)
 			execs = append(execs, exec)
 		}
 	}
@@ -191,13 +191,13 @@ func cancelOrders(bs *buySellOrders) []ExecutionReport {
 	for iter := bs.buyOrders.iterator(); iter.Next() == true; {
 		order := iter.Value().(OrderState)
 		bs.buyOrders.RemoveByID(order.OrderID())
-		exec := MakeRestateOrderExecutionReport(order)
+		exec := MakeOrderCancelledExecutionReport(order, ExecTypeCanceled)
 		execs = append(execs, exec)
 	}
 	for iter := bs.sellOrders.iterator(); iter.Next() == true; {
 		order := iter.Value().(OrderState)
 		bs.sellOrders.RemoveByID(order.OrderID())
-		exec := MakeRestateOrderExecutionReport(order)
+		exec := MakeOrderCancelledExecutionReport(order, ExecTypeCanceled)
 		execs = append(execs, exec)
 	}
 	return execs

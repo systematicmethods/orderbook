@@ -21,8 +21,8 @@ func OrderTypeConv(ordertype string) OrderType {
 	return OrderTypeUnknown
 }
 
-func OrderTypeToString(ordertype OrderType) string {
-	switch ordertype {
+func (it OrderType) String() string {
+	switch it {
 	case OrderTypeLimit:
 		return "Limit"
 	case OrderTypeMarket:

@@ -132,7 +132,7 @@ func (b *orderState) String() string {
 		b.side,
 		b.price,
 		b.orderQty,
-		OrderTypeToString(b.orderType),
+		b.orderType,
 		b.timeInForce,
 		b.expireOn,
 		b.transactTime)

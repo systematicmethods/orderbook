@@ -50,8 +50,8 @@ func ExecTypeConv(thetype string) ExecType {
 	return ExecTypeUnknown
 }
 
-func ExecTypeToString(thetype ExecType) string {
-	switch thetype {
+func (it ExecType) String() string {
+	switch it {
 	case ExecTypeNew:
 		return "New"
 	case ExecTypeTrade:

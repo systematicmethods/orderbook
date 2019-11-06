@@ -12,9 +12,10 @@ func Test_OrderBook_AddBuySellOrderGoodForTime(t *testing.T) {
 	ins := instrument.MakeInstrument(inst, "ABV Investments")
 	bk := MakeOrderBook(ins, OrderBookEventTypeOpenTrading, clock.NewMock())
 	assert.AssertEqualT(t, *bk.Instrument(), ins, "instrument same")
+	aclock := makeMockClock(12, 34, 0)
 
-	e1, _ := bk.NewOrder(makeLimitOrderTimeInForce("cli1", "id1", SideBuy, 100, 1.01, TimeInForceGoodForTime, makeTime(11, 11, 1)))
-	e2, _ := bk.NewOrder(makeLimitOrderTimeInForce("cli2", "id2", SideSell, 101, 1.03, TimeInForceGoodForTime, makeTime(11, 11, 1)))
+	e1, _ := bk.NewOrder(makeLimitOrderTimeInForce("cli1", "id1", SideBuy, 100, 1.01, TimeInForceGoodForTime, makeTime(11, 11, 1), aclock))
+	e2, _ := bk.NewOrder(makeLimitOrderTimeInForce("cli2", "id2", SideSell, 101, 1.03, TimeInForceGoodForTime, makeTime(11, 11, 1), aclock))
 
 	assert.AssertEqualT(t, 1, len(e1), "e1 1")
 	assert.AssertEqualT(t, 1, len(e2), "e2 1")
@@ -36,10 +37,11 @@ func Test_OrderBook_AddBuySellOrderGoodForLongTime(t *testing.T) {
 	ins := instrument.MakeInstrument(inst, "ABV Investments")
 	bk := MakeOrderBook(ins, OrderBookEventTypeOpenTrading, clock.NewMock())
 	assert.AssertEqualT(t, *bk.Instrument(), ins, "instrument same")
+	aclock := makeMockClock(12, 34, 0)
 
 	expireon := makeDateTime(2019, 10, 21, 11, 11, 11)
-	e1, _ := bk.NewOrder(makeLimitOrderTimeInForce("cli1", "id1", SideBuy, 100, 1.01, TimeInForceGoodForTime, expireon))
-	e2, _ := bk.NewOrder(makeLimitOrderTimeInForce("cli2", "id2", SideSell, 101, 1.03, TimeInForceGoodForTime, expireon))
+	e1, _ := bk.NewOrder(makeLimitOrderTimeInForce("cli1", "id1", SideBuy, 100, 1.01, TimeInForceGoodForTime, expireon, aclock))
+	e2, _ := bk.NewOrder(makeLimitOrderTimeInForce("cli2", "id2", SideSell, 101, 1.03, TimeInForceGoodForTime, expireon, aclock))
 
 	assert.AssertEqualT(t, 1, len(e1), "e1 1")
 	assert.AssertEqualT(t, 1, len(e2), "e2 1")

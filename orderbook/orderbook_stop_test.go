@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func Test_OrderBook_IOC_Sell(t *testing.T) {
+func Test_OrderBook_Stop_Sell(t *testing.T) {
 	ins := instrument.MakeInstrument(inst, "ABV Investments")
 	bk := MakeOrderBook(ins, OrderBookEventTypeOpenTrading, clock.NewMock())
 	assert.AssertEqualT(t, *bk.Instrument(), ins, "instrument same")
@@ -27,7 +27,7 @@ func Test_OrderBook_IOC_Sell(t *testing.T) {
 	assert.AssertEqualT(t, exec.ExecType(), ExecTypeCanceled, "cancelled")
 }
 
-func Test_OrderBook_IOC_Buy(t *testing.T) {
+func Test_OrderBook_Stop_Buy(t *testing.T) {
 	ins := instrument.MakeInstrument(inst, "ABV Investments")
 	bk := MakeOrderBook(ins, OrderBookEventTypeOpenTrading, clock.NewMock())
 	assert.AssertEqualT(t, *bk.Instrument(), ins, "instrument same")

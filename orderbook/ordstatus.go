@@ -43,8 +43,8 @@ func OrdStatusConv(thetype string) OrdStatus {
 	return OrdStatusUnknown
 }
 
-func (side OrdStatus) String() string {
-	switch side {
+func (it OrdStatus) String() string {
+	switch it {
 	case OrdStatusNew:
 		return "New"
 	case OrdStatusPartiallyFilled:

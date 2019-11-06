@@ -25,8 +25,8 @@ func TimeInForceConv(str string) TimeInForce {
 	return TimeInForceUnknown
 }
 
-func (tif TimeInForce) String() string {
-	switch tif {
+func (it TimeInForce) String() string {
+	switch it {
 	case TimeInForceDay:
 		return "Day"
 	case TimeInForceGoodForAuction:

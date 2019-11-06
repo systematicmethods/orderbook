@@ -59,7 +59,7 @@ func (b *executionReport) String() string {
 		b.side,
 		b.lastQty,
 		b.lastPrice,
-		ExecTypeToString(b.execType),
+		b.execType,
 		b.leavesQty,
 		b.cumQty,
 		OrdStatusToString(b.ordStatus))
@@ -191,7 +191,7 @@ func MakeCancelOrderExecutionReport(ord OrderState, order OrderCancelRequest) Ex
 	})
 }
 
-func MakeRestateOrderExecutionReport(ord OrderState) ExecutionReport {
+func MakeOrderCancelledExecutionReport(ord OrderState, exectype ExecType) ExecutionReport {
 	theExecID, _ := uuid.NewUUID()
 	return ExecutionReport(&executionReport{
 		ord.InstrumentID(),
@@ -200,7 +200,7 @@ func MakeRestateOrderExecutionReport(ord OrderState) ExecutionReport {
 		ord.Side(),
 		0,
 		0,
-		ExecTypeRestated,
+		exectype,
 		ord.LeavesQty(),
 		ord.CumQty(),
 		OrdStatusCanceled,
@@ -209,7 +209,7 @@ func MakeRestateOrderExecutionReport(ord OrderState) ExecutionReport {
 		theExecID.String(),
 		ord.OrderQty(),
 		ord.TransactTime(),
-		ExecRestatementReasonCancelOnTradingHalt,
+		ExecRestatementReasonNone,
 		EventTypeRestated,
 	})
 }

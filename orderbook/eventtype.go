@@ -47,6 +47,39 @@ func EventTypeConv(thetype string) EventType {
 	case "DoneForDay":
 		return EventTypeDoneForDay
 	}
-
 	return EventTypeUnknown
+}
+
+func (it EventType) String() string {
+	switch it {
+	case EventTypeNewOrderSingle:
+		return "EventTypeNewOrderSingle"
+	case EventTypeNewOrderAck:
+		return "EventTypeNewOrderAck"
+	case EventTypeRejected:
+		return "EventTypeRejected"
+	case EventTypeCancel:
+		return "EventTypeCancel"
+	case EventTypeCancelled:
+		return "EventTypeCancelled"
+	case EventTypeReplaced:
+		return "EventTypeReplaced"
+	case EventTypeCancelAck:
+		return "EventTypeCancelAck"
+	case EventTypeCancelRejected:
+		return "EventTypeCancelRejected"
+	case EventTypePartialFill:
+		return "EventTypePartialFill"
+	case EventTypeFill:
+		return "EventTypeFill"
+	case EventTypeDoneForDay:
+		return "EventTypeDoneForDay"
+	case EventTypeExpired:
+		return "EventTypeExpired"
+	case EventTypeDone:
+		return "EventTypeDone"
+	case EventTypeRestated:
+		return "EventTypeRestated"
+	}
+	return "EventTypeUnknown"
 }

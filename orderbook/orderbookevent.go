@@ -34,36 +34,36 @@ func OrderBookStateChange(orderBookState OrderBookState, eventType OrderBookEven
 		if orderBookState == OrderBookStateOrderEntryOpen || orderBookState == OrderBookStateAuctionClosed {
 			return OrderBookStateTradingOpen, nil
 		}
-		return orderBookState, fmt.Errorf(OrderBookEventTypeStateErrorFormat, OrderBookEventTypeToString(eventType), OrderBookStateToString(orderBookState))
+		return orderBookState, fmt.Errorf(OrderBookEventTypeStateErrorFormat, OrderBookEventTypeToString(eventType), orderBookState)
 	case OrderBookEventTypeCloseTrading:
 		if orderBookState == OrderBookStateTradingOpen {
 			return OrderBookStateTradingClosed, nil
 		}
-		return orderBookState, fmt.Errorf(OrderBookEventTypeStateErrorFormat, OrderBookEventTypeToString(eventType), OrderBookStateToString(orderBookState))
+		return orderBookState, fmt.Errorf(OrderBookEventTypeStateErrorFormat, OrderBookEventTypeToString(eventType), orderBookState)
 
 	case OrderBookEventTypeOpenAuction:
 		if orderBookState == OrderBookStateOrderEntryOpen || orderBookState == OrderBookStateTradingClosed {
 			return OrderBookStateAuctionOpen, nil
 		}
-		return orderBookState, fmt.Errorf(OrderBookEventTypeStateErrorFormat, OrderBookEventTypeToString(eventType), OrderBookStateToString(orderBookState))
+		return orderBookState, fmt.Errorf(OrderBookEventTypeStateErrorFormat, OrderBookEventTypeToString(eventType), orderBookState)
 	case OrderBookEventTypeCloseAuction:
 		if orderBookState == OrderBookStateAuctionOpen {
 			return OrderBookStateAuctionClosed, nil
 		}
-		return orderBookState, fmt.Errorf(OrderBookEventTypeStateErrorFormat, OrderBookEventTypeToString(eventType), OrderBookStateToString(orderBookState))
+		return orderBookState, fmt.Errorf(OrderBookEventTypeStateErrorFormat, OrderBookEventTypeToString(eventType), orderBookState)
 
 	case OrderBookEventTypeCloseOrderEntry:
 		if orderBookState == OrderBookStateTradingClosed || orderBookState == OrderBookStateAuctionClosed {
 			return OrderBookStateOrderEntryClosed, nil
 		}
-		return orderBookState, fmt.Errorf(OrderBookEventTypeStateErrorFormat, OrderBookEventTypeToString(eventType), OrderBookStateToString(orderBookState))
+		return orderBookState, fmt.Errorf(OrderBookEventTypeStateErrorFormat, OrderBookEventTypeToString(eventType), orderBookState)
 	case OrderBookEventTypeOpenOrderEntry:
 		if orderBookState == OrderBookStateOrderEntryClosed || orderBookState == OrderBookStateAuctionClosed {
 			return OrderBookStateOrderEntryOpen, nil
 		}
-		return orderBookState, fmt.Errorf(OrderBookEventTypeStateErrorFormat, OrderBookEventTypeToString(eventType), OrderBookStateToString(orderBookState))
+		return orderBookState, fmt.Errorf(OrderBookEventTypeStateErrorFormat, OrderBookEventTypeToString(eventType), orderBookState)
 	}
-	return orderBookState, fmt.Errorf(OrderBookEventTypeStateErrorFormat, OrderBookEventTypeToString(eventType), OrderBookStateToString(orderBookState))
+	return orderBookState, fmt.Errorf(OrderBookEventTypeStateErrorFormat, OrderBookEventTypeToString(eventType), orderBookState)
 }
 
 func OrderBookEventTypeAs(eventType OrderBookEventType) OrderBookState {
@@ -102,8 +102,8 @@ func OrderBookStateConv(thetype string) OrderBookState {
 	return OrderBookStateUnknown
 }
 
-func OrderBookStateToString(thetype OrderBookState) string {
-	switch thetype {
+func (it OrderBookState) String() string {
+	switch it {
 	case OrderBookStateTradingOpen:
 		return "TradingOpen"
 	case OrderBookStateTradingClosed:

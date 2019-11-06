@@ -11,32 +11,34 @@ func Test_OrderBook_Auction_AddBuySellOrder(t *testing.T) {
 	ins := instrument.MakeInstrument(inst, "ABV Investments")
 	bk := MakeOrderBook(ins, OrderBookEventTypeOpenAuction, clock.NewMock())
 	assert.AssertEqualT(t, *bk.Instrument(), ins, "instrument same")
+	aclock := makeMockClock(12, 34, 0)
 
-	e1, _ := bk.NewOrder(makeAuctionLimitOrder("cli1", "id1", SideBuy, 100, 1.01))
-	e2, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id2", SideSell, 101, 1.03))
+	e1, _ := bk.NewOrder(makeAuctionLimitOrder("cli1", "id1", SideBuy, 100, 1.01, aclock))
+	e2, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id2", SideSell, 101, 1.03, aclock))
 
 	assert.AssertEqualT(t, 1, len(e1), "e1 empty")
 	assert.AssertEqualT(t, 1, len(e2), "e2 empty")
 	assert.AssertEqualT(t, bk.BuyAuctionSize(), 1, "buy size should be 1")
 	assert.AssertEqualT(t, bk.SellAuctionSize(), 1, "sell size should be 1")
-	containsExec(t, e1, "cli1", "id1", OrdStatusNew, "new order", 0, 0)
-	containsExec(t, e2, "cli2", "id2", OrdStatusNew, "new order", 0, 0)
+	containsExec(t, e1, "cli1", "id1", OrdStatusNew, "new order", 0, 0, 1)
+	containsExec(t, e2, "cli2", "id2", OrdStatusNew, "new order", 0, 0, 1)
 }
 
 func Test_OrderBook_Auction_AddBuySellOrderMid(t *testing.T) {
 	ins := instrument.MakeInstrument(inst, "ABV Investments")
 	bk := MakeOrderBook(ins, OrderBookEventTypeOpenAuction, clock.NewMock())
 	assert.AssertEqualT(t, *bk.Instrument(), ins, "instrument same")
+	aclock := makeMockClock(12, 34, 0)
 
-	e1, _ := bk.NewOrder(makeAuctionLimitOrder("cli1", "id1", SideBuy, 100, 1.02))
-	e2, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id2", SideSell, 101, 1.01))
+	e1, _ := bk.NewOrder(makeAuctionLimitOrder("cli1", "id1", SideBuy, 100, 1.02, aclock))
+	e2, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id2", SideSell, 101, 1.01, aclock))
 
 	assert.AssertEqualT(t, 1, len(e1), "e1 empty")
 	assert.AssertEqualT(t, 1, len(e2), "e2 empty")
 	assert.AssertEqualT(t, bk.BuyAuctionSize(), 1, "buy size should be 1")
 	assert.AssertEqualT(t, bk.SellAuctionSize(), 1, "sell size should be 1")
-	containsExec(t, e1, "cli1", "id1", OrdStatusNew, "new order", 0, 0)
-	containsExec(t, e2, "cli2", "id2", OrdStatusNew, "new order", 0, 0)
+	containsExec(t, e1, "cli1", "id1", OrdStatusNew, "new order", 0, 0, 1)
+	containsExec(t, e2, "cli2", "id2", OrdStatusNew, "new order", 0, 0, 1)
 
 	e3, clrPrice, clrVol, _ := bk.CloseAuction()
 	assert.AssertEqualT(t, 5, len(e3), "e3 5")
@@ -45,20 +47,21 @@ func Test_OrderBook_Auction_AddBuySellOrderMid(t *testing.T) {
 	assert.AssertEqualT(t, 0, len(bk.BuyAuctionOrders()), "buy orders")
 	assert.AssertEqualT(t, 0, len(bk.SellAuctionOrders()), "sell orders")
 
-	containsExec(t, e3, "cli1", "id1", OrdStatusPartiallyFilled, "part fill", 50, 1.01)
+	containsExec(t, e3, "cli1", "id1", OrdStatusPartiallyFilled, "part fill", 50, 1.01, 1)
 }
 
 func Test_OrderBook_Auction_MatchBuySellOrder(t *testing.T) {
 
 	ins := instrument.MakeInstrument(inst, "ABV Investments")
 	bk := MakeOrderBook(ins, OrderBookEventTypeOpenAuction, clock.NewMock())
+	aclock := makeMockClock(12, 34, 0)
 
-	e10, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id2", SideBuy, 100, 1.01))   // 2
-	e11, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id3", SideBuy, 100, 1.01))   // 2
-	e12, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id4", SideBuy, 100, 1.01))   // 2 cancel
-	e13, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id5", SideBuy, 100, 1.01))   // cancel
-	e21, _ := bk.NewOrder(makeAuctionLimitOrder("cli1", "id21", SideSell, 101, 1.00)) // 2
-	e22, _ := bk.NewOrder(makeAuctionLimitOrder("cli1", "id22", SideSell, 101, 1.00)) // 2
+	e10, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id2", SideBuy, 100, 1.01, aclock))   // 2
+	e11, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id3", SideBuy, 100, 1.01, aclock))   // 2
+	e12, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id4", SideBuy, 100, 1.01, aclock))   // 2 cancel
+	e13, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id5", SideBuy, 100, 1.01, aclock))   // cancel
+	e21, _ := bk.NewOrder(makeAuctionLimitOrder("cli1", "id21", SideSell, 101, 1.00, aclock)) // 2
+	e22, _ := bk.NewOrder(makeAuctionLimitOrder("cli1", "id22", SideSell, 101, 1.00, aclock)) // 2
 
 	assert.AssertEqualT(t, 1, len(e10), "e10 empty")
 	assert.AssertEqualT(t, 1, len(e11), "e11 empty")
@@ -105,13 +108,14 @@ e15|cli2|id5|buy|0|0|Cancelled`
 func Test_OrderBook_Auction_MatchSellBuyOrder(t *testing.T) {
 	ins := instrument.MakeInstrument(inst, "ABV Investments")
 	bk := MakeOrderBook(ins, OrderBookEventTypeOpenAuction, clock.NewMock())
+	aclock := makeMockClock(12, 34, 0)
 
-	e10, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id2", SideSell, 100, 1.00)) // 2
-	e11, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id3", SideSell, 100, 1.00)) // 2
-	e12, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id4", SideSell, 100, 1.00)) // 2 + 1
-	e13, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id5", SideSell, 100, 1.00)) // 1
-	e21, _ := bk.NewOrder(makeAuctionLimitOrder("cli1", "id21", SideBuy, 101, 1.01)) // 2 + 1
-	e22, _ := bk.NewOrder(makeAuctionLimitOrder("cli1", "id22", SideBuy, 101, 1.01)) // 2 + 1
+	e10, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id2", SideSell, 100, 1.00, aclock)) // 2
+	e11, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id3", SideSell, 100, 1.00, aclock)) // 2
+	e12, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id4", SideSell, 100, 1.00, aclock)) // 2 + 1
+	e13, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id5", SideSell, 100, 1.00, aclock)) // 1
+	e21, _ := bk.NewOrder(makeAuctionLimitOrder("cli1", "id21", SideBuy, 101, 1.01, aclock)) // 2 + 1
+	e22, _ := bk.NewOrder(makeAuctionLimitOrder("cli1", "id22", SideBuy, 101, 1.01, aclock)) // 2 + 1
 
 	assert.AssertEqualT(t, 1, len(e10), "e10 empty")
 	assert.AssertEqualT(t, 1, len(e11), "e11 empty")
@@ -158,13 +162,14 @@ e15|cli2|id5|sell|0|0|Cancelled`
 func Test_OrderBook_Auction_MatchSellBuyOrderPlaceDuringTrading(t *testing.T) {
 	ins := instrument.MakeInstrument(inst, "ABV Investments")
 	bk := MakeOrderBook(ins, OrderBookEventTypeOpenOrderEntry, clock.NewMock())
+	aclock := makeMockClock(12, 34, 0)
 
-	e10, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id2", SideSell, 100, 1.00)) // 2x50
-	e11, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id3", SideSell, 100, 1.00)) // 1x1 1x50 1x49
-	e12, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id4", SideSell, 100, 1.00)) // 1x1 1x1 1xC
-	e13, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id5", SideSell, 100, 1.00)) // 1xC
-	e21, _ := bk.NewOrder(makeAuctionLimitOrder("cli1", "id21", SideBuy, 101, 1.01)) // 2x50 1x1
-	e22, _ := bk.NewOrder(makeAuctionLimitOrder("cli1", "id22", SideBuy, 101, 1.01)) // 1x50 1x49 1x1 1x1
+	e10, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id2", SideSell, 100, 1.00, aclock)) // 2x50
+	e11, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id3", SideSell, 100, 1.00, aclock)) // 1x1 1x50 1x49
+	e12, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id4", SideSell, 100, 1.00, aclock)) // 1x1 1x1 1xC
+	e13, _ := bk.NewOrder(makeAuctionLimitOrder("cli2", "id5", SideSell, 100, 1.00, aclock)) // 1xC
+	e21, _ := bk.NewOrder(makeAuctionLimitOrder("cli1", "id21", SideBuy, 101, 1.01, aclock)) // 2x50 1x1
+	e22, _ := bk.NewOrder(makeAuctionLimitOrder("cli1", "id22", SideBuy, 101, 1.01, aclock)) // 1x50 1x49 1x1 1x1
 
 	assert.AssertEqualT(t, 1, len(e10), "e10 empty")
 	assert.AssertEqualT(t, 1, len(e11), "e11 empty")

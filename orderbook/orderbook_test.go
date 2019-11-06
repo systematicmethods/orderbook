@@ -36,21 +36,8 @@ func makeDateTime(year, month, day, hour, min, sec int) time.Time {
 	loc, _ := time.LoadLocation("UTC")
 	return time.Date(year, time.Month(month), day, hour, min, sec, 0, loc)
 }
-func makeLimitOrder(clientID string, clOrdID string, side Side, qty int64, price float64) NewOrderSingle {
-	dt := makeTime(11, 11, 1)
-	return MakeNewOrderLimit(
-		inst,
-		clientID,
-		clOrdID,
-		side,
-		price,
-		qty,
-		TimeInForceGoodTillCancel,
-		dt,
-		dt)
-}
 
-func makeLimitOrderWithClock(clientID string, clOrdID string, side Side, qty int64, price float64, clock clock.Clock) NewOrderSingle {
+func makeLimitOrder(clientID string, clOrdID string, side Side, qty int64, price float64, clock clock.Clock) NewOrderSingle {
 	dt := makeTime(11, 11, 1)
 	return MakeNewOrderLimit(
 		inst,
@@ -64,8 +51,7 @@ func makeLimitOrderWithClock(clientID string, clOrdID string, side Side, qty int
 		clock.Now())
 }
 
-func makeLimitOrderTimeInForce(clientID string, clOrdID string, side Side, qty int64, price float64, timeInForce TimeInForce, expireOn time.Time) NewOrderSingle {
-	dt := makeTime(11, 11, 1)
+func makeLimitOrderTimeInForce(clientID string, clOrdID string, side Side, qty int64, price float64, timeInForce TimeInForce, expireOn time.Time, clock clock.Clock) NewOrderSingle {
 	return MakeNewOrderLimit(
 		inst,
 		clientID,
@@ -75,10 +61,10 @@ func makeLimitOrderTimeInForce(clientID string, clOrdID string, side Side, qty i
 		qty,
 		timeInForce,
 		expireOn,
-		dt)
+		clock.Now())
 }
 
-func makeAuctionLimitOrder(clientID string, clOrdID string, side Side, qty int64, price float64) NewOrderSingle {
+func makeAuctionLimitOrder(clientID string, clOrdID string, side Side, qty int64, price float64, clock clock.Clock) NewOrderSingle {
 	dt := makeTime(11, 11, 1)
 	return MakeNewOrderLimit(
 		inst,
@@ -89,10 +75,10 @@ func makeAuctionLimitOrder(clientID string, clOrdID string, side Side, qty int64
 		qty,
 		TimeInForceGoodForAuction,
 		dt,
-		dt)
+		clock.Now())
 }
 
-func makeMarketOrder(clientID string, clOrdID string, side Side, qty int64) NewOrderSingle {
+func makeMarketOrder(clientID string, clOrdID string, side Side, qty int64, clock clock.Clock) NewOrderSingle {
 	dt := makeTime(11, 11, 1)
 	return MakeNewOrderMarket(
 		inst,
@@ -102,7 +88,7 @@ func makeMarketOrder(clientID string, clOrdID string, side Side, qty int64) NewO
 		qty,
 		TimeInForceGoodTillCancel,
 		dt,
-		dt)
+		clock.Now())
 }
 
 func printExecs(execs []ExecutionReport) {
@@ -154,8 +140,10 @@ func printExecsAndOrders(execs []ExecutionReport, bk *buySellOrders, buyorders [
 		}
 	}
 }
-func containsExec(t *testing.T, execs []ExecutionReport, clientID string, clOrdID string, status OrdStatus, msg string, lastq int64, lastp float64) {
+
+func containsExec(t *testing.T, execs []ExecutionReport, clientID string, clOrdID string, status OrdStatus, msg string, lastq int64, lastp float64, count int) ExecutionReport {
 	var found = 0
+	var exec ExecutionReport
 	for _, v := range execs {
 		if v.ClientID() == clientID &&
 			v.ClOrdID() == clOrdID &&
@@ -163,10 +151,18 @@ func containsExec(t *testing.T, execs []ExecutionReport, clientID string, clOrdI
 			v.LastPrice() == lastp &&
 			v.LastQty() == lastq {
 			found++
+			exec = v
 		}
 	}
 	if found == 0 {
 		_, file, line, _ := runtime.Caller(1)
 		t.Errorf("\n%s:%d: not found %s %s:%s %v %d %f", assert.AssertionAt(file), line, msg, clientID, clOrdID, OrdStatusToString(status), lastq, lastp)
+		printExecs(execs)
 	}
+	if found != count {
+		_, file, line, _ := runtime.Caller(1)
+		t.Errorf("\n%s:%d: found (%d) too many %s %s:%s %v %d %f", assert.AssertionAt(file), line, found, msg, clientID, clOrdID, OrdStatusToString(status), lastq, lastp)
+		printExecs(execs)
+	}
+	return exec
 }
