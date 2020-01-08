@@ -99,9 +99,19 @@ func AssertNotNilT(t *testing.T, a interface{}, msg string) bool {
 }
 
 func AssertNilT(t *testing.T, a interface{}, msg string) bool {
+	ty := reflect.TypeOf(a)
+	_, file, line, _ := runtime.Caller(1)
+	if ty != nil && ty.Kind() == reflect.Ptr {
+		x := reflect.ValueOf(a)
+		//fmt.Printf("\n*a='%v'\n", x.Pointer())
+		if x.Pointer() != 0 {
+			t.Errorf("\n%s:%d: %s '%v' not nil %v", AssertionAt(file), line, msg, a, reflect.TypeOf(a))
+			return false
+		}
+		return true
+	}
 	if reflect.TypeOf(a) != nil {
-		_, file, line, _ := runtime.Caller(1)
-		t.Errorf("\n%s:%d: %s '%v' not nil", AssertionAt(file), line, msg, a)
+		t.Errorf("\n%s:%d: %s '%v' not nil %v", AssertionAt(file), line, msg, a, reflect.TypeOf(a))
 		return false
 	}
 	return true

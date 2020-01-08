@@ -9,5 +9,9 @@ func Test_RejectDuplicateOrderID(t *testing.T) {
 	AssertNotEqualT(t, "orderid3", "orderid5", "not equal")
 	AssertNotNilT(t, "orderid5", "not nil")
 	AssertNilT(t, nil, "not nil")
-
+	type a struct {
+		a *string
+	}
+	aa := a{}
+	AssertNilT(t, aa.a, "not nil")
 }

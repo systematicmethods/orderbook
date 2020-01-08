@@ -8,8 +8,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/rdumont/assistdog"
 	"orderbook/assert"
+	"orderbook/fixmodel"
 	"orderbook/instrument"
 	"orderbook/orderbook"
+	"orderbook/orderstate"
+	"orderbook/tradingevent"
 	"reflect"
 	"strconv"
 	"strings"
@@ -19,8 +22,8 @@ import (
 var pending = fmt.Errorf("Pending")
 var assit = assistdog.NewDefault()
 var bk orderbook.OrderBook
-var execs []orderbook.ExecutionReport
-var orders []orderbook.OrderEvent
+var execs []*fixmodel.ExecutionReport
+var orders []fixmodel.OrderEvent
 var loc, _ = time.LoadLocation("UTC")
 
 const (
@@ -59,25 +62,25 @@ func FeatureContextLimitOrder(s *godog.Suite) {
 }
 
 func anOrderBookForInstrument(inst string) error {
-	ins := instrument.MakeInstrument(inst, inst+"name")
-	bk = orderbook.MakeOrderBook(ins, orderbook.OrderBookEventTypeOpenTrading, clock.NewMock())
-	execs = []orderbook.ExecutionReport{}
-	orders = []orderbook.OrderEvent{}
+	ins := instrument.NewInstrument(inst, inst+"name")
+	bk = orderbook.NewOrderBook(ins, tradingevent.OrderBookEventTypeOpenTrading, clock.NewMock())
+	execs = []*fixmodel.ExecutionReport{}
+	orders = []fixmodel.OrderEvent{}
 	return nil
 }
 
 func usersSendOrdersWith(table *gherkin.DataTable) error {
-	execs = []orderbook.ExecutionReport{}
+	execs = []*fixmodel.ExecutionReport{}
 	slice, _ := assit.ParseSlice(table)
 	for _, row := range slice {
-		switch orderbook.EventTypeConv(row[tabEvent]) {
-		case orderbook.EventTypeNewOrderSingle:
-			order := makeOrder(row)
+		switch fixmodel.EventTypeConv(row[tabEvent]) {
+		case fixmodel.EventTypeNewOrderSingle:
+			order := newOrder(row)
 			executions, _ := bk.NewOrder(order)
 			execs = append(execs, executions...)
 			orders = append(orders, order)
-		case orderbook.EventTypeCancel:
-			order := makeCancelOrder(row)
+		case fixmodel.EventTypeCancel:
+			order := newCancelOrder(row)
 			executions, _ := bk.CancelOrder(order)
 			//fmt.Printf("Cancel Exec [%v]\n", exec)
 			execs = append(execs, executions)
@@ -97,7 +100,12 @@ func awaitExecutions(num int) error {
 	return fmt.Errorf("did not get %d execs, got %d", num, len(execs))
 }
 
-func containsExec(ex []orderbook.ExecutionReport, ac orderbook.ExecutionReport, msg string) error {
+func containsExec(ex []*fixmodel.ExecutionReport, ac *fixmodel.ExecutionReport, msg string) error {
+	if ac == nil {
+		printExecs(msg, ex)
+		return fmt.Errorf("Act nil %s", msg)
+
+	}
 	var found = 0
 	for _, v := range ex {
 		if err := compareExec(v, ac); err == nil {
@@ -113,9 +121,9 @@ func containsExec(ex []orderbook.ExecutionReport, ac orderbook.ExecutionReport, 
 
 func executionsShouldBe(table *gherkin.DataTable) error {
 	slice, _ := assit.ParseSlice(table)
-	var expectedExecs []orderbook.ExecutionReport
+	var expectedExecs []*fixmodel.ExecutionReport
 	for _, row := range slice {
-		exec := makeExec(row)
+		exec := newExec(row)
 		expectedExecs = append(expectedExecs, exec)
 	}
 	for _, ac := range execs {
@@ -128,11 +136,11 @@ func executionsShouldBe(table *gherkin.DataTable) error {
 
 func orderStateShouldBe(table *gherkin.DataTable) error {
 	slice, _ := assit.ParseSlice(table)
-	var expectedBuyState []orderbook.OrderState
-	var expectedSellState []orderbook.OrderState
+	var expectedBuyState []*orderstate.OrderState
+	var expectedSellState []*orderstate.OrderState
 	for _, row := range slice {
-		order := makeState(row)
-		if order.Side() == orderbook.SideBuy {
+		order := newState(row)
+		if order.Side() == fixmodel.SideBuy {
 			expectedBuyState = append(expectedBuyState, order)
 		} else {
 			expectedSellState = append(expectedSellState, order)
@@ -168,101 +176,105 @@ func orderStateShouldBe(table *gherkin.DataTable) error {
 	return nil
 }
 
-func printState(msg string, orders []orderbook.OrderState) {
+func printState(msg string, orders []*orderstate.OrderState) {
 	for _, v := range orders {
 		fmt.Printf("%s: %v\n", msg, v)
 	}
 }
 
-func printExecs(msg string, execs []orderbook.ExecutionReport) {
+func printExecs(msg string, execs []*fixmodel.ExecutionReport) {
 	for _, v := range execs {
 		fmt.Printf("%s: %v\n", msg, v)
 	}
 }
 
-func makeOrder(row map[string]string) orderbook.NewOrderSingle {
+func newOrder(row map[string]string) *fixmodel.NewOrderSingle {
 	price, _ := strconv.ParseFloat(row[tabPrice], 64)
 	qty, _ := strconv.ParseInt(row[tabQty], 10, 64)
 	//fmt.Printf("\n qty in test %d %f row %v\n", qty, price, row)
 	dt := time.Date(2019, 10, 11, 11, 11, 1, 0, loc)
 	if row[tabOrdType] == "Limit" {
-		return orderbook.MakeNewOrderLimit(
+		return fixmodel.NewNewOrder(
 			row[tabInstrument],
 			row[tabClientID],
 			row[tabClOrdID],
-			orderbook.SideConv(row[tabSide]),
+			fixmodel.SideConv(row[tabSide]),
 			price,
 			qty,
-			orderbook.TimeInForceConv(row[tabTimeInForce]),
+			fixmodel.TimeInForceConv(row[tabTimeInForce]),
 			dt,
-			dt)
+			dt,
+			fixmodel.OrderTypeLimit)
 	} else if row[tabOrdType] == "Market" {
-		return orderbook.MakeNewOrderMarket(
+		return fixmodel.NewNewOrder(
 			row[tabInstrument],
 			row[tabClientID],
 			row[tabClOrdID],
-			orderbook.SideConv(row[tabSide]),
+			fixmodel.SideConv(row[tabSide]),
+			0,
 			qty,
-			orderbook.TimeInForceConv(row[tabTimeInForce]),
+			fixmodel.TimeInForceConv(row[tabTimeInForce]),
 			dt,
-			dt)
+			dt,
+			fixmodel.OrderTypeMarket)
 	}
 	return nil
 
 }
 
-func makeCancelOrder(row map[string]string) orderbook.OrderCancelRequest {
+func newCancelOrder(row map[string]string) *fixmodel.OrderCancelRequest {
 	dt := time.Date(2019, 10, 11, 11, 11, 1, 0, loc)
-	return orderbook.MakeOrderCancelRequest(
+	return fixmodel.NewOrderCancelRequest(
 		row[tabInstrument],
 		row[tabClientID],
 		row[tabClOrdID],
-		orderbook.SideConv(row[tabSide]),
+		fixmodel.SideConv(row[tabSide]),
 		row[tabOrigClOrdID],
 		dt)
 }
 
-func makeExec(row map[string]string) orderbook.ExecutionReport {
+func newExec(row map[string]string) *fixmodel.ExecutionReport {
 	dt := time.Date(2019, 10, 11, 11, 11, 1, 0, loc)
 	qty, _ := strconv.ParseInt(row[tabQty], 10, 64)
 	lastqty, _ := strconv.ParseInt(row[tabLastQty], 10, 64)
 	cumqty, _ := strconv.ParseInt(row[tabCumQty], 10, 64)
 	lastprice, _ := strconv.ParseFloat(row[tabLastPrice], 64)
 	leavesQty := qty - cumqty
-	return orderbook.MakeExecutionReport(
-		orderbook.EventTypeConv(row[tabEvent]),
+	return fixmodel.NewExecutionReport(
+		fixmodel.EventTypeConv(row[tabEvent]),
 		row[tabInstrument],
 		row[tabClientID],
 		row[tabClOrdID],
-		orderbook.SideConv(row[tabSide]),
+		fixmodel.SideConv(row[tabSide]),
 		lastqty,
 		lastprice,
-		orderbook.ExecTypeConv(row[tabExecType]),
+		fixmodel.ExecTypeConv(row[tabExecType]),
 		leavesQty,
 		cumqty,
-		orderbook.OrdStatusConv(row[tabStatus]),
+		fixmodel.OrdStatusConv(row[tabStatus]),
 		row[tabOrigClOrdID],
 		row[tabOrderID],
 		row[tabExecID],
 		qty,
-		dt)
+		dt,
+		fixmodel.ExecRestatementReasonNone)
 }
 
-func makeState(row map[string]string) orderbook.OrderState {
+func newState(row map[string]string) *orderstate.OrderState {
 	dt := time.Date(2019, 10, 11, 11, 11, 1, 0, loc)
 	qty, _ := strconv.ParseInt(row[tabQty], 10, 64)
 	cumqty, _ := strconv.ParseInt(row[tabCumQty], 10, 64)
 	price, _ := strconv.ParseFloat(row[tabPrice], 64)
 	leavesQty := qty - cumqty
-	return orderbook.MakeOrderState(
+	return orderstate.NewOrderState(
 		row[tabInstrument],
 		row[tabClientID],
 		row[tabClOrdID],
-		orderbook.SideConv(row[tabSide]),
+		fixmodel.SideConv(row[tabSide]),
 		price,
 		qty,
-		orderbook.OrderTypeConv(row[tabOrdType]),
-		orderbook.TimeInForceConv(row[tabTimeInForce]),
+		fixmodel.OrderTypeConv(row[tabOrdType]),
+		fixmodel.TimeInForceConv(row[tabTimeInForce]),
 		dt,
 		dt,
 		dt,
@@ -271,11 +283,11 @@ func makeState(row map[string]string) orderbook.OrderState {
 		uuid.New(),
 		leavesQty,
 		cumqty,
-		orderbook.OrdStatusConv(row[tabStatus]),
+		fixmodel.OrdStatusConv(row[tabStatus]),
 	)
 }
 
-func compareState(exp orderbook.OrderState, act orderbook.OrderState) error {
+func compareState(exp *orderstate.OrderState, act *orderstate.OrderState) error {
 	if act == nil {
 		return fmt.Errorf("act nil")
 	}
@@ -290,7 +302,7 @@ func compareState(exp orderbook.OrderState, act orderbook.OrderState) error {
 	assert.AssertEqualSB(exp.Price(), act.Price(), "Price", &errors)
 	assert.AssertEqualSB(exp.LeavesQty(), act.LeavesQty(), "LeavesQty", &errors)
 	assert.AssertEqualSB(exp.CumQty(), act.CumQty(), "CumQty", &errors)
-	assert.AssertEqualSB(orderbook.OrdStatusToString(exp.OrdStatus()), orderbook.OrdStatusToString(act.OrdStatus()), "OrdStatus", &errors)
+	assert.AssertEqualSB(fixmodel.OrdStatusToString(exp.OrdStatus()), fixmodel.OrdStatusToString(act.OrdStatus()), "OrdStatus", &errors)
 	assert.AssertEqualSB(exp.OrderQty(), act.OrderQty(), "OrderQty", &errors)
 	if !compareID(exp.OrderID(), act.OrderID()) {
 		fmt.Fprintf(&errors, "%s", "orderid null")
@@ -303,7 +315,7 @@ func compareState(exp orderbook.OrderState, act orderbook.OrderState) error {
 	}
 	return nil
 }
-func compareExec(exp orderbook.ExecutionReport, act orderbook.ExecutionReport) error {
+func compareExec(exp *fixmodel.ExecutionReport, act *fixmodel.ExecutionReport) error {
 	if act == nil {
 		return fmt.Errorf("act nil")
 	}
@@ -320,7 +332,7 @@ func compareExec(exp orderbook.ExecutionReport, act orderbook.ExecutionReport) e
 	assert.AssertEqualSB(exp.ExecType(), act.ExecType(), "ExecType", &errors)
 	assert.AssertEqualSB(exp.LeavesQty(), act.LeavesQty(), "LeavesQty", &errors)
 	assert.AssertEqualSB(exp.CumQty(), act.CumQty(), "CumQty", &errors)
-	assert.AssertEqualSB(orderbook.OrdStatusToString(exp.OrdStatus()), orderbook.OrdStatusToString(act.OrdStatus()), "OrdStatus", &errors)
+	assert.AssertEqualSB(fixmodel.OrdStatusToString(exp.OrdStatus()), fixmodel.OrdStatusToString(act.OrdStatus()), "OrdStatus", &errors)
 	assert.AssertEqualSB(exp.OrigClOrdID(), act.OrigClOrdID(), "OrigClOrdID", &errors)
 	assert.AssertEqualSB(exp.OrderQty(), act.OrderQty(), "OrderQty", &errors)
 	if !compareID(exp.OrderID(), act.OrderID()) {

@@ -1,0 +1,23 @@
+@startuml
+
+class Market {
+	NewOrder() []ExecutionReport
+	CancelOrder() []ExecutionReport
+	Tick() []ExecutionReport
+	OrderBookEvent() []ExecutionReport
+}
+
+class OrderBook
+class Schedule
+class Auction
+class Instrument
+class Strategy
+
+Market *--- OrderBook
+Market *--- Auction
+Market *--- Instrument
+Market *--- Schedule
+Market o--- Strategy
+
+
+@enduml

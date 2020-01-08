@@ -8,11 +8,11 @@ type Instrument interface {
 	DecimalPlaces() int32
 }
 
-func MakeInstrument(id string, name string) *instrument {
+func NewInstrument(id string, name string) *instrument {
 	return &instrument{id: id, name: name, dp: 2}
 }
 
-func MakeInstrumentDP(id string, name string, decimalPlaces int32) *instrument {
+func NewInstrumentDP(id string, name string, decimalPlaces int32) *instrument {
 	return &instrument{id: id, name: name, dp: decimalPlaces}
 }
 

@@ -1,0 +1,31 @@
+@startuml
+title Trigger Stop Sell as Price Falls
+
+participant Client1 order 10
+participant Client2 order 20
+participant Client3 order 21
+participant OrderBook order 30
+
+Client1 -> OrderBook: New Order (id11 Buy 50 ABC @11.11)
+OrderBook --> Client1: New Order Ack (id11)
+
+Client2 -> OrderBook: New Order (id21 Sell 50 ABC @11.00)
+OrderBook --> Client2: New Order Ack (id21)
+
+OrderBook --> Client1: Order Fill (id11 50 @11.11 rem 0)
+OrderBook --> Client2: Order Fill (id21 50 @11.11 rem 0)
+
+Client1 -> OrderBook: Stop Order (id12 Sell 50 ABC @10.00)
+OrderBook --> Client1: Stop Order Ack (id12)
+
+Client3 -> OrderBook: New Order (id31 Buy 40 ABC @9.00)
+OrderBook --> Client3: New Order Ack (id31)
+
+OrderBook --> OrderBook: id12 stop sell added as market order
+
+OrderBook --> Client1: Order Partial Fill (id12 40 @9.00 rem 0)
+OrderBook --> Client3: Order Fill (id31 40 @9.00 rem 0)
+
+OrderBook --> OrderBook: Remainder Stop Order (id12 Sell 10 ABC @9.00)
+
+@enduml
