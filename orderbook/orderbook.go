@@ -34,7 +34,15 @@ type OrderBook interface {
 	BuySize() int
 	SellSize() int
 
+	BuyTop() *MarketPrice
+	SellTop() *MarketPrice
+
 	State() tradingevent.OrderBookState
+}
+
+type MarketPrice struct {
+	Price    float64
+	Quantity int64
 }
 
 type BuySellOrders struct {
@@ -441,6 +449,14 @@ func (b *orderbook) BuySize() int {
 
 func (b *orderbook) SellSize() int {
 	return b.orders.SellOrders.Size()
+}
+
+func (b *orderbook) BuyTop() *MarketPrice {
+	return &MarketPrice{b.orders.BuyOrders.Top().Price(), b.orders.BuyOrders.Top().LeavesQty()}
+}
+
+func (b *orderbook) SellTop() *MarketPrice {
+	return &MarketPrice{b.orders.SellOrders.Top().Price(), b.orders.SellOrders.Top().LeavesQty()}
 }
 
 func (b *orderbook) BuyOrders() []*orderstate.OrderState {

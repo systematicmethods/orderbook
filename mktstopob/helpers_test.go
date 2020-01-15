@@ -17,7 +17,7 @@ func makeStopOrder(clientID string, clOrdID string, side fixmodel.Side, qty int6
 		side,
 		price,
 		qty,
-		fixmodel.TimeInForceGoodTillCancel,
+		fixmodel.TimeInForceImmediateOrCancel,
 		dt,
 		clock.Now(),
 		fixmodel.OrderTypeStop)

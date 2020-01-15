@@ -61,7 +61,7 @@ func (b *stopob) NewOrder(order *fixmodel.NewOrderSingle) ([]*fixmodel.Execution
 	//}
 
 	if execs, err := b.ob.NewOrder(order); err == nil {
-		return append(execs, b.triggerStop(execs)...), err
+		return b.triggerStop(execs), err
 	}
 	return nil, nil
 }
@@ -126,12 +126,37 @@ func (b *stopob) SellStopSize() int {
 
 func (b *stopob) triggerStop(execs []*fixmodel.ExecutionReport) []*fixmodel.ExecutionReport {
 	if b.ob.BuySize() > 0 {
+		executedstoporders := []*orderstate.OrderState{}
+		for iter := b.so.SellOrders.Iterator(); iter.Next() == true; {
+			order := iter.Value().(*orderstate.OrderState)
+			// submit sell order if buy top of book is less than sell stop order price
+			if b.ob.BuyTop().Price < order.Price() {
+				//if order.Price() < b.ob.BuyOrders
+				neworder := newNeworder(order, b.clock)
+				aexecs, _ := b.ob.NewOrder(neworder)
+				execs = append(execs, aexecs...)
+				executedstoporders = append(executedstoporders, order)
+
+			}
+		}
+		for _, v := range executedstoporders {
+			b.so.SellOrders.RemoveByID(v.OrderID())
+		}
+	}
+	if b.ob.SellSize() > 0 {
+		executedstoporders := []*orderstate.OrderState{}
 		for iter := b.so.BuyOrders.Iterator(); iter.Next() == true; {
 			order := iter.Value().(*orderstate.OrderState)
-			//if order.Price() < b.ob.BuyOrders
-			neworder := newNeworder(order, b.clock)
-			aexecs, _ := b.ob.NewOrder(neworder)
-			execs = append(execs, aexecs...)
+			// submit buy order if sell top of book is greater than buy stop order price
+			if b.ob.SellTop().Price > order.Price() {
+				neworder := newNeworder(order, b.clock)
+				aexecs, _ := b.ob.NewOrder(neworder)
+				execs = append(execs, aexecs...)
+				executedstoporders = append(executedstoporders, order)
+			}
+		}
+		for _, v := range executedstoporders {
+			b.so.BuyOrders.RemoveByID(v.OrderID())
 		}
 	}
 	//if  b.ob.SellSize() > 0 {

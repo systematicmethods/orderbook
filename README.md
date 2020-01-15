@@ -64,3 +64,5 @@ its useful if orders needs to be created for testing or back testing
 purposes. However, these generated UUIDs cannot be mixed with
 UUID's created from a wall clock. 
 
+## Run Benchmarks
+go test -bench=. -count=10 ./orderbook 

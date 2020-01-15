@@ -124,6 +124,14 @@ func (b *auction) BuySize() int {
 	return b.orders.BuyOrders.Size()
 }
 
+func (b *auction) BuyTop() *orderbook.MarketPrice {
+	return &orderbook.MarketPrice{b.orders.BuyOrders.Top().Price(), b.orders.BuyOrders.Top().LeavesQty()}
+}
+
+func (b *auction) SellTop() *orderbook.MarketPrice {
+	return &orderbook.MarketPrice{b.orders.SellOrders.Top().Price(), b.orders.SellOrders.Top().LeavesQty()}
+}
+
 func (b *auction) auctionBookOrders() *BuySellOrders {
 	return &b.orders
 }
