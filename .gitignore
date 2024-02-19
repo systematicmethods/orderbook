@@ -14,3 +14,4 @@
 hello
 vendor/*
 attic
+*.tmp
